@@ -1,0 +1,28 @@
+DockerSandbox unavailable (No module named 'pandasai_docker'). Code will run unsandboxed.
+ 
+ -------------- celery@DESKTOP-JV26ONL v5.6.3 (recovery)
+--- ***** ----- 
+-- ******* ---- Windows-10-10.0.19045-SP0 2026-07-19 21:38:20
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         plateforme:0x18895c5dd50
+- ** ---------- .> transport:   redis://localhost:6379/0
+- ** ---------- .> results:     redis://localhost:6379/0
+- *** --- * --- .> concurrency: 4 (solo)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+
+[tasks]
+  . cleanup_expired_sessions
+  . process_prompt
+
+[2026-07-19 21:38:20,792: INFO/MainProcess] Connected to redis://localhost:6379/0
+[2026-07-19 21:38:20,800: INFO/MainProcess] mingle: searching for neighbors
+[2026-07-19 21:38:21,823: INFO/MainProcess] mingle: all alone
+[2026-07-19 21:38:21,844: INFO/MainProcess] celery@DESKTOP-JV26ONL ready.
+[2026-07-19 21:44:38,819: INFO/MainProcess] sync with worker-10512@DESKTOP-JV26ONL
+[2026-07-20 02:57:32,839: INFO/MainProcess] missed heartbeat from worker-10512@DESKTOP-JV26ONL
+[2026-07-20 11:06:40,974: INFO/MainProcess] sync with worker-3824@DESKTOP-JV26ONL

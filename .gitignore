@@ -1,0 +1,12 @@
+.admin-credentials.local
+infra/keycloak/keycloak-*/
+dev.db
+storage/
+__pycache__/
+*.pyc
+.env
+.venv/
+venv/
+
+node_modules/
+_test_storage/

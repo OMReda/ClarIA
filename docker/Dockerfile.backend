@@ -1,0 +1,39 @@
+# ── Python 3.11 (hard ceiling for pandasai 3.0.0 which requires <3.12) ────────
+FROM python:3.11-slim AS base
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+WORKDIR /app
+
+# System deps: libmagic (python-magic), libpq (psycopg2)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      libmagic1 \
+      libpq-dev \
+      gcc \
+      git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY backend/requirements.txt ./requirements.txt
+COPY backend/requirements-ml.txt ./requirements-ml.txt
+RUN pip install --upgrade pip && pip install -r requirements.txt -r requirements-ml.txt
+
+# Copy application source
+COPY backend/ ./backend/
+
+# Create storage directory
+RUN mkdir -p /app/storage
+
+# ── API stage ─────────────────────────────────────────────────────────────────
+FROM base AS api
+EXPOSE 8000
+CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+
+# ── Worker stage ──────────────────────────────────────────────────────────────
+FROM base AS worker
+# Worker needs Docker socket access for DockerSandbox — mounted via Compose
+CMD ["celery", "-A", "backend.workers.celery_app", "worker", \
+     "--loglevel=info", "--concurrency=2", "-Q", "celery"]

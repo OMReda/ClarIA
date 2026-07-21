@@ -1,0 +1,142 @@
+services:
+
+  # ── PostgreSQL ────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       plateforme
+      POSTGRES_USER:     plateforme
+      POSTGRES_PASSWORD: plateforme
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U plateforme"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ── Redis ─────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # ── Ollama (local LLM — default provider) ─────────────────────────────────
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    environment:
+      OLLAMA_MODEL: qwen2.5-coder:7b
+    volumes:
+      - ollamadata:/root/.ollama
+      - ./docker/ollama-entrypoint.sh:/entrypoint.sh
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:11434/api/tags || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 120s    # model pull can take a few minutes
+    ports:
+      - "11434:11434"
+
+  # ── Database migrations (runs once then exits) ────────────────────────────
+  migrate:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+      target: base
+    command: >
+      sh -c "
+        cd /app &&
+        alembic -c backend/alembic.ini upgrade head
+      "
+    environment:
+      DATABASE_URL_SYNC: postgresql+psycopg2://plateforme:plateforme@postgres:5432/plateforme
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  # ── FastAPI ───────────────────────────────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+      target: api
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL:      postgresql+asyncpg://plateforme:plateforme@postgres:5432/plateforme
+      DATABASE_URL_SYNC: postgresql+psycopg2://plateforme:plateforme@postgres:5432/plateforme
+      REDIS_URL:         redis://redis:6379/0
+      OLLAMA_BASE_URL:   http://ollama:11434
+      STORAGE_PATH:      /app/storage
+    volumes:
+      - filestore:/app/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8000/api/v1/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Celery worker ─────────────────────────────────────────────────────────
+  worker:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+      target: worker
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL_SYNC: postgresql+psycopg2://plateforme:plateforme@postgres:5432/plateforme
+      REDIS_URL:         redis://redis:6379/0
+      OLLAMA_BASE_URL:   http://ollama:11434
+      STORAGE_PATH:      /app/storage
+    volumes:
+      - filestore:/app/storage
+      # Docker socket mount — required for DockerSandbox (pandasai-docker).
+      # SECURITY NOTE: this grants the worker container access to the host Docker
+      # daemon. In production, use a dedicated Docker daemon or Sysbox.
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  # ── Frontend (nginx) ──────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  redisdata:
+  ollamadata:
+  filestore:

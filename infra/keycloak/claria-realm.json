@@ -1,0 +1,57 @@
+{
+  "realm": "claria",
+  "enabled": true,
+  "clients": [
+    {
+      "clientId": "claria-frontend",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "http://localhost:5173/*"
+      ],
+      "webOrigins": [
+        "http://localhost:5173"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      }
+    }
+  ],
+  "roles": {
+    "realm": [
+      {
+        "name": "user",
+        "description": "Standard user"
+      },
+      {
+        "name": "admin",
+        "description": "Administrator"
+      }
+    ]
+  },
+  "users": [
+    {
+      "id": "67ddce07-24ac-4861-9e69-de35d86b4710",
+      "username": "testuser",
+      "email": "test@claria.local",
+      "firstName": "Test",
+      "lastName": "User",
+      "emailVerified": true,
+      "enabled": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "user"
+      ]
+    }
+  ]
+}

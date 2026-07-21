@@ -1,0 +1,51 @@
+# !! PYTHON VERSION REQUIREMENT: >=3.10, <3.12 !!
+# PandasAI 3.0.0 (in requirements-ml.txt) requires Python <3.12.
+# Running on Python 3.12+ will fail with cryptic import errors.
+# The app checks this at startup (see backend/main.py).
+#
+# Core
+fastapi>=0.111.0
+uvicorn[standard]>=0.29.0
+pydantic>=2.7.0
+pydantic-settings>=2.3.0
+
+# Security & Auth
+PyJWT[crypto]>=2.9.0
+httpx>=0.27.0
+
+
+# Database
+sqlalchemy>=2.0.30
+asyncpg>=0.29.0
+psycopg2-binary>=2.9.9
+alembic>=1.13.1
+aiosqlite>=0.20.0
+
+# Redis + Celery
+celery>=5.4.0
+redis<5.0.0
+
+# File handling
+python-multipart>=0.0.9
+openpyxl>=3.1.5
+xlrd>=2.0.1
+
+# File type detection
+python-magic>=0.4.27
+chardet>=5.2.0
+
+
+# Fuzzy matching
+rapidfuzz>=3.9.3
+
+# Data processing
+pandas>=2.0.0
+numpy>=1.20.0
+
+# Additional ML & Export Libraries
+xlsxwriter>=3.2.0
+jinja2>=3.1.0
+astor>=0.8.1
+duckdb>=1.0.0,<2.0.0
+matplotlib>=3.7.1,<3.8
+litellm>=1.61.20,<2.0.0
