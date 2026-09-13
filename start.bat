@@ -187,6 +187,11 @@ echo  [START] Celery Worker (async prompt processing)...
 start "Celery Worker" cmd /k "cd /d %~dp0 && color 0D && title Celery Worker && set CELERY_ALWAYS_EAGER=False&& .venv\Scripts\python.exe -m celery -A backend.workers.celery_app worker --loglevel=info -Q celery --pool=solo -n worker-%%RANDOM%%@%%h"
 timeout /t 3 /nobreak >nul
 
+:: ── 7.5 Launch Keycloak ───────────────────────────────────────────────────────
+echo  [START] Keycloak (http://localhost:8080)...
+start "Keycloak Auth" cmd /k "cd /d %~dp0 && color 0E && title Keycloak Auth && call start-keycloak.bat --import-realm"
+timeout /t 5 /nobreak >nul
+
 :: ── 8. Launch Frontend ────────────────────────────────────────────────────────
 echo  [START] Launching frontend (http://localhost:5173)...
 start "Frontend Vite" cmd /k "cd /d %~dp0\frontend && color 0B && title Frontend Vite && npm run dev"
@@ -194,13 +199,14 @@ timeout /t 4 /nobreak >nul
 
 :: ── 9. Open browser ───────────────────────────────────────────────────────────
 echo  [OK] Opening browser...
-start "" "http://localhost:5173"
+start "" "https://localhost:5173"
 
 echo.
 echo  -------------------------------------------------------------------
-echo   Frontend  :  http://localhost:5173
+echo   Frontend  :  https://localhost:5173
 echo   Backend   :  http://localhost:8000
 echo   API docs  :  http://localhost:8000/api/docs
+echo   Keycloak  :  http://localhost:8080
 echo  -------------------------------------------------------------------
 echo   Mode: Native ASYNC — Redis + Celery Worker + Backend + Frontend
 echo   Press any key here to STOP everything and exit.
@@ -213,6 +219,7 @@ echo  [STOP] Shutting down...
 taskkill /fi "WindowTitle eq Backend API" /f >nul 2>&1
 taskkill /fi "WindowTitle eq Celery Worker" /f >nul 2>&1
 taskkill /fi "WindowTitle eq Frontend Vite" /f >nul 2>&1
+taskkill /fi "WindowTitle eq Keycloak Auth" /f >nul 2>&1
 echo  [DONE] All servers stopped.
 timeout /t 2 /nobreak >nul
 

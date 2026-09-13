@@ -21,7 +21,7 @@ DATA_KEYWORDS = [
     "montre", "affiche", "graph", "evolution", "comparer",
     "total", "moyenne", "par mois", "par region", "par an",
     "combien", "quel", "quelle", "top", "pire", "meilleur",
-    "histogramme", "camembert", "repartition", "reparti",
+    "histogramme", "camembert", "cammembert", "camenbert", "repartition", "reparti",
     "tendance", "diagramme", "circulaire", "chiffre", "ca",
     "visualise", "visualiser", "contribution", "distribution",
     "analyse", "analyser", "calcul", "calculer", "somme",

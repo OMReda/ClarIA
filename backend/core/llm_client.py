@@ -8,6 +8,12 @@ from backend.core.config import get_settings
 logger = logging.getLogger(__name__)
 settings = get_settings()
 
+# Module-level reference to the currently configured LLM.
+# Set by configure_pandasai() and read by generate_explanation() /
+# classify_data_intent() to avoid depending on pai.config internals
+# (which changed between PandasAI v2 and v3).
+_current_llm = None
+
 
 
 # ── Ollama reachability probe ─────────────────────────────────────────────────
@@ -157,10 +163,16 @@ def build_llm(force_fallback: bool = False):
 
 
 
-def configure_pandasai(llm=None, llm_config: dict | None = None) -> None:
-    """Configure PandasAI globally. Called per-task with optional per-request override."""
+def configure_pandasai(llm=None, llm_config: dict | None = None) -> str:
+    """Configure PandasAI globally. Returns the provider that was actually used.
+    
+    Returns one of: 'local', 'openai', 'anthropic', 'google',
+    'google-fallback', 'openai-fallback', 'anthropic-fallback', 'unknown'.
+    The -fallback suffix signals Ollama was down and a server env key was used instead.
+    """
     import pandasai as pai  # lazy — not available on Python 3.14 dev hosts
 
+    actual_provider = "unknown"
     if llm is None:
         if llm_config:
             provider = llm_config.get("provider", "").lower()
@@ -175,6 +187,7 @@ def configure_pandasai(llm=None, llm_config: dict | None = None) -> None:
             try:
                 from pandasai_openai import OpenAI  # type: ignore
                 llm = OpenAI(api_token=api_key, timeout=settings.llm_timeout_seconds)
+                actual_provider = "openai"
                 logger.info("LLM: OpenAI/%s (per-request key)", model)
             except ImportError:
                 raise RuntimeError("pandasai-openai not installed. Run: pip install pandasai-openai")
@@ -182,16 +195,15 @@ def configure_pandasai(llm=None, llm_config: dict | None = None) -> None:
         elif provider in ("anthropic",) and api_key:
             try:
                 from pandasai_litellm.litellm import LiteLLM  # type: ignore
-                # Pass key as a scoped constructor arg, not via os.environ
                 actual_model = model or "anthropic/claude-3-haiku-20240307"
                 if not actual_model.startswith("anthropic/"):
                     actual_model = "anthropic/" + actual_model
-                    
                 llm = LiteLLM(
                     model=actual_model,
                     api_key=api_key,
                     timeout=settings.llm_timeout_seconds,
                 )
+                actual_provider = "anthropic"
                 logger.info("LLM: Anthropic/%s (per-request key)", actual_model)
             except ImportError:
                 raise RuntimeError("pandasai-litellm not installed. Run: pip install pandasai-litellm")
@@ -199,12 +211,12 @@ def configure_pandasai(llm=None, llm_config: dict | None = None) -> None:
         elif provider in ("google",) and api_key:
             try:
                 from pandasai_litellm.litellm import LiteLLM  # type: ignore
-                # Pass key as a scoped constructor arg, not via os.environ
                 llm = LiteLLM(
                     model=model or "gemini/gemini-3.5-flash",
                     api_key=api_key,
                     timeout=settings.llm_timeout_seconds,
                 )
+                actual_provider = "google"
                 logger.info("LLM: Google/%s (per-request key)", model)
             except ImportError:
                 raise RuntimeError("pandasai-litellm not installed. Run: pip install pandasai-litellm")
@@ -230,6 +242,7 @@ def configure_pandasai(llm=None, llm_config: dict | None = None) -> None:
                                 api_key=fb_key,
                                 timeout=settings.llm_timeout_seconds,
                             )
+                            actual_provider = f"{fb_name}-fallback"
                             break
                         except ImportError:
                             pass
@@ -238,7 +251,6 @@ def configure_pandasai(llm=None, llm_config: dict | None = None) -> None:
                         "Ollama is not reachable and no fallback API key is configured in .env."
                     )
             else:
-                # drop_params=True suppresses LiteLLM's capability-probe (api/show) calls
                 try:
                     from pandasai_litellm.litellm import LiteLLM  # type: ignore
                     ollama_model = model or settings.llm_model
@@ -248,23 +260,25 @@ def configure_pandasai(llm=None, llm_config: dict | None = None) -> None:
                         timeout=settings.llm_timeout_seconds,
                         drop_params=True,
                         extra_body={
-                            "options": {
-                                "num_ctx": 4096,
-                            },
+                            "options": {"num_ctx": 4096},
                             "keep_alive": "1h",
                         },
                     )
+                    actual_provider = "local"
                     logger.info("LLM: Ollama/%s (per-request)", ollama_model)
                 except ImportError:
                     raise RuntimeError("pandasai-litellm not installed. Run: pip install pandasai-litellm")
 
+    global _current_llm
     pai.config.set({
         "llm": llm,
         "save_logs": True,
         "verbose": False,
         "max_retries": 2,
     })
-    logger.info("PandasAI configured.")
+    _current_llm = llm  # store for generate_explanation() / classify_data_intent()
+    logger.info("PandasAI configured (provider=%s).", actual_provider)
+    return actual_provider
 
 
 
@@ -430,6 +444,16 @@ def build_aggregation_prompt(
     )
 
 
+class PlainTextPrompt:
+    """Simple wrapper to pass raw string prompts to PandasAI v3 LLM wrappers (.call expects an object with .to_string())."""
+    def __init__(self, text: str):
+        self._text = text
+    def to_string(self) -> str:
+        return self._text
+    def __str__(self) -> str:
+        return self._text
+
+
 def generate_explanation(
     user_prompt: str,
     chart_type: str,
@@ -444,7 +468,7 @@ def generate_explanation(
     blocks the chart response.
 
     Uses the same LLM backend as PandasAI (LiteLLM or OpenAI wrapper),
-    called directly via .chat() instead of through PandasAI.
+    called directly via .call() instead of through PandasAI.
     """
     try:
         prompt = (
@@ -455,14 +479,28 @@ def generate_explanation(
             f"- Résumé des données : {result_summary}\n"
             "Sois précis et factuel. Ne répète pas la question."
         )
-        # Re-use the configured LLM (already set by configure_pandasai)
-        import pandasai as pai
-        llm = pai.config.get("llm")
+        # Use the module-level LLM reference set by configure_pandasai().
+        # This is reliable across PandasAI v2/v3 regardless of config object shape.
+        llm = _current_llm
+        if llm is None:
+            # Fallback: try pai.config internals for backward compat
+            try:
+                import pandasai as pai
+                config_obj = pai.config.get() if hasattr(pai.config, "get") else pai.config
+                llm = config_obj.get("llm") if isinstance(config_obj, dict) else getattr(config_obj, "llm", None)
+            except Exception:
+                pass
         if llm is None:
             return None
 
-        # LiteLLM and OpenAI wrappers both expose .chat()
-        response = llm.chat(prompt)
+        # In PandasAI v3, LLM wrappers expose .call(prompt_object) instead of .chat()
+        if hasattr(llm, "call"):
+            response = llm.call(PlainTextPrompt(prompt))
+        elif hasattr(llm, "chat"):
+            response = llm.chat(prompt)
+        else:
+            return None
+
         if isinstance(response, str):
             return response.strip()[:500]
         # Some wrappers return objects with .content or similar
@@ -486,8 +524,16 @@ def classify_data_intent(user_prompt: str, column_names: list[str]) -> Optional[
     It uses the same LLM that PandasAI is already configured with.
     """
     try:
-        import pandasai as pai
-        llm = pai.config.get("llm")
+        # Use the module-level LLM reference set by configure_pandasai().
+        llm = _current_llm
+        if llm is None:
+            # Fallback: try pai.config internals for backward compat
+            try:
+                import pandasai as pai
+                config_obj = pai.config.get() if hasattr(pai.config, "get") else pai.config
+                llm = config_obj.get("llm") if isinstance(config_obj, dict) else getattr(config_obj, "llm", None)
+            except Exception:
+                pass
         if llm is None:
             return None
 
@@ -500,7 +546,13 @@ def classify_data_intent(user_prompt: str, column_names: list[str]) -> Optional[
             f"User message: {user_prompt}"
         )
 
-        response = llm.chat(classification_prompt)
+        if hasattr(llm, "call"):
+            response = llm.call(PlainTextPrompt(classification_prompt))
+        elif hasattr(llm, "chat"):
+            response = llm.chat(classification_prompt)
+        else:
+            return None
+
         if isinstance(response, str):
             answer = response.strip().upper()
         else:
@@ -516,3 +568,4 @@ def classify_data_intent(user_prompt: str, column_names: list[str]) -> Optional[
     except Exception as exc:
         logger.warning("classify_data_intent failed (will fall back to keywords): %s", exc)
         return None
+

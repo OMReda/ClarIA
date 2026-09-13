@@ -27,12 +27,11 @@ from backend.services.rate_limiter import check_and_increment
 
 # ─── Helpers ─────────────────────────────────────────────────────────────────
 
-async def _upload_csv(client: AsyncClient, session_id: str, rows=None) -> str:
+async def _upload_csv(client: AsyncClient, rows=None) -> str:
     rows = rows or SAMPLE_ROWS
     csv_bytes = make_csv(rows)
     resp = await client.post(
         "/api/v1/files",
-        headers={"X-Session-ID": session_id},
         files={"file": ("test.csv", csv_bytes, "text/csv")},
     )
     assert resp.status_code == 201
@@ -42,14 +41,13 @@ async def _upload_csv(client: AsyncClient, session_id: str, rows=None) -> str:
 # ─── Scenario 8: Prompt submission accepted ───────────────────────────────────
 
 @pytest.mark.asyncio
-async def test_s8_prompt_submission(client: AsyncClient, session_id: str):
+async def test_s8_prompt_submission(client: AsyncClient):
     """Scenario 8: POST /prompts → 202 with prompt_id."""
-    file_id = await _upload_csv(client, session_id)
+    file_id = await _upload_csv(client)
     with patch("backend.api.prompts.process_prompt") as mock_task:
         mock_task.delay = MagicMock()
         resp = await client.post(
             f"/api/v1/files/{file_id}/prompts",
-            headers={"X-Session-ID": session_id},
             json={"text": "Génère un histogramme des ventes"},
         )
     assert resp.status_code == 202, resp.text
@@ -61,9 +59,9 @@ async def test_s8_prompt_submission(client: AsyncClient, session_id: str):
 # ─── Scenario 9: Ownership enforcement ───────────────────────────────────────
 
 @pytest.mark.asyncio
-async def test_s9_session_ownership(client: AsyncClient, session_id: str):
+async def test_s9_session_ownership(client: AsyncClient):
     """Scenario 9: Different session cannot submit prompts for another session's file."""
-    file_id = await _upload_csv(client, session_id)
+    file_id = await _upload_csv(client)
     
     from backend.main import app
     from backend.core.security import get_current_user, User
@@ -76,7 +74,6 @@ async def test_s9_session_ownership(client: AsyncClient, session_id: str):
     
     resp = await client.post(
         f"/api/v1/files/{file_id}/prompts",
-        headers={"X-Session-ID": str(uuid.uuid4())},
         json={"text": "test"},
     )
     
@@ -91,12 +88,11 @@ async def test_s9_session_ownership(client: AsyncClient, session_id: str):
 # ─── Scenario 10: Empty prompt rejected ──────────────────────────────────────
 
 @pytest.mark.asyncio
-async def test_s10_empty_prompt_rejected(client: AsyncClient, session_id: str):
+async def test_s10_empty_prompt_rejected(client: AsyncClient):
     """Scenario 10: Blank prompt text is rejected."""
-    file_id = await _upload_csv(client, session_id)
+    file_id = await _upload_csv(client)
     resp = await client.post(
         f"/api/v1/files/{file_id}/prompts",
-        headers={"X-Session-ID": session_id},
         json={"text": "   "},
     )
     assert resp.status_code == 400
@@ -127,13 +123,12 @@ def test_s11_chart_type_detection(prompt: str, expected_type: str):
 # ─── Scenario 12: Rate limiting ──────────────────────────────────────────────
 
 @pytest.mark.asyncio
-async def test_s12_rate_limit(client: AsyncClient, session_id: str):
+async def test_s12_rate_limit(client: AsyncClient):
     """Scenario 12: 31st prompt in 1 hour is rejected with 429."""
     with patch("backend.api.prompts.check_and_increment", return_value=(False, 31)):
-        file_id = await _upload_csv(client, session_id)
+        file_id = await _upload_csv(client)
         resp = await client.post(
             f"/api/v1/files/{file_id}/prompts",
-            headers={"X-Session-ID": session_id},
             json={"text": "test prompt"},
         )
     assert resp.status_code == 429

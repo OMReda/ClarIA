@@ -100,9 +100,26 @@ def test_wrong_audience_azp():
     assert "azp" in exc_info.value.detail.lower()
 
 def test_missing_user_role():
+    """
+    Design intent (security.py L87-88): any authenticated Keycloak realm user
+    who has neither 'user' nor 'admin' in their roles is automatically granted
+    standard 'user' access. This prevents lockout when Keycloak role assignment
+    is delayed, while keeping admin routes strictly protected by require_admin.
+    """
     token = create_test_token(roles=["other_role"])
     creds = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
+    # Should NOT raise — auto-grant applies
+    user = get_current_user(creds)
+    assert "user" in user.roles  # auto-granted
+    assert "admin" not in user.roles
+
+def test_require_admin_blocks_non_admin():
+    """require_admin must raise 403 for any user without the 'admin' role."""
+    from backend.core.security import require_admin
+    token = create_test_token(roles=["user"])
+    creds = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
+    user = get_current_user(creds)
     with pytest.raises(HTTPException) as exc_info:
-        get_current_user(creds)
+        require_admin(user)
     assert exc_info.value.status_code == 403
-    assert "permissions" in exc_info.value.detail.lower()
+    assert "admin" in exc_info.value.detail.lower()

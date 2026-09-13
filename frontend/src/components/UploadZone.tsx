@@ -10,6 +10,21 @@ export function UploadZone() {
   const { setUploadResult, addToast, setStatus, config } = useStore()
 
   const handleFile = useCallback(async (file: File) => {
+    // Client-side validation
+    const maxSize = (config?.max_file_size_mb || 10) * 1024 * 1024
+    const allowedExtensions = ['.csv', '.xlsx', '.xls']
+    const isExtensionValid = allowedExtensions.some(ext => file.name.toLowerCase().endsWith(ext))
+
+    if (!isExtensionValid) {
+      addToast('error', 'Format de fichier non supporté. Veuillez utiliser un fichier CSV ou Excel (.xlsx, .xls).')
+      return
+    }
+
+    if (file.size > maxSize) {
+      addToast('error', `Fichier trop volumineux. La limite est de ${config?.max_file_size_mb || 10} Mo.`)
+      return
+    }
+
     setUploading(true)
     setStatus('uploading')
     useDatasetStore.getState().setActive(null)
@@ -22,17 +37,21 @@ export function UploadZone() {
       let msg = 'Une erreur est survenue lors de l\'import.'
       if (err?.name === 'ZodError') {
         msg = 'Erreur de validation des données du serveur.'
+      } else if (typeof err?.response?.data?.detail === 'string') {
+        msg = err.response.data.detail
       } else if (err?.response?.data?.detail?.error?.message) {
         msg = err.response.data.detail.error.message
       } else if (err?.response?.data?.error?.message) {
         msg = err.response.data.error.message
+      } else if (err?.message) {
+        msg = `${msg} (${err.message})`
       }
       addToast('error', msg)
       setStatus('idle')
     } finally {
       setUploading(false)
     }
-  }, [setUploadResult, addToast, setStatus])
+  }, [setUploadResult, addToast, setStatus, config])
 
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -89,7 +108,7 @@ export function UploadZone() {
       )}
 
       <p className="upload-zone__hint">
-        {config 
+        {config
           ? `CSV, Excel (.xlsx, .xls) · Maximum ${config.max_file_size_mb} Mo · ${config.max_rows.toLocaleString('fr-FR')} lignes`
           : `CSV, Excel (.xlsx, .xls) · Maximum 10 Mo · 100 000 lignes`
         }

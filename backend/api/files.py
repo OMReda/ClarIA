@@ -7,6 +7,7 @@ POST /api/v1/files/{id}/sheet  — select sheet for multi-sheet xlsx
 from __future__ import annotations
 
 import asyncio
+import json
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -15,6 +16,7 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, File, Header, HTTPException, UploadFile, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select, update
+from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.core.config import get_settings
@@ -270,6 +272,11 @@ async def save_dashboard_config(
     except ValueError:
         raise _error("INVALID_FILE_ID", "file_id must be a valid UUID.")
 
+    # Size guard: prevent oversized dashboard configs from bloating the DB
+    config_json = json.dumps(config)
+    if len(config_json) > 512_000:  # 500 KB cap
+        raise _error("PAYLOAD_TOO_LARGE", "Dashboard config exceeds the 500 KB maximum size.")
+
     result = await db.execute(select(FileModel).where(FileModel.id == fid))
     file_record = result.scalar_one_or_none()
     if not file_record:
@@ -279,6 +286,7 @@ async def save_dashboard_config(
         raise _error("FORBIDDEN", "This file does not belong to you.", http_status=403)
 
     file_record.dashboard_config = config
+    flag_modified(file_record, "dashboard_config")
     await db.commit()
     return {"status": "ok"}
 
@@ -400,7 +408,7 @@ async def get_current_session(
                 "raw_text": p.raw_text,
                 "status": p.status,
                 "clarification_question": p.clarification_question,
-                
+                "explanation": p.explanation,
                 "error_message": p.error_message,
                 "created_at": p.created_at,
                 "chart": {
@@ -411,6 +419,51 @@ async def get_current_session(
             
     return SessionHydrationResponse(files=file_list, prompts=all_prompts)
 
+# ── GET /api/v1/files/{file_id}/unique-values ────────────────────────────
+
+@router.get("/{file_id}/unique-values")
+async def get_unique_values(
+    file_id: str,
+    column: str,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_session),
+):
+    try:
+        fid = uuid.UUID(file_id)
+    except ValueError:
+        raise _error("INVALID_FILE_ID", "file_id must be a valid UUID.")
+
+    result = await db.execute(select(FileModel).where(FileModel.id == fid))
+    file_record = result.scalar_one_or_none()
+    if not file_record:
+        raise _error("FILE_NOT_FOUND", "File not found.", http_status=404)
+
+    if file_record.owner_id != user.sub:
+        raise _error("FORBIDDEN", "This file does not belong to you.", http_status=403)
+
+    try:
+        df = await asyncio.to_thread(
+            lambda: load_dataframe_from_path(file_record.storage_path, sheet_name=file_record.sheet_name)
+        )
+    except Exception as exc:
+        raise _error("PARSE_ERROR", f"Could not parse file data: {exc}")
+
+    if column not in df.columns:
+        raise _error("INVALID_COLUMN", f"Column '{column}' not found in the dataset.")
+
+    # Get all unique non-null values, sorted, capped at 1000
+    unique_vals = (
+        df[column]
+        .dropna()
+        .astype(str)
+        .unique()
+        .tolist()
+    )
+    unique_vals = sorted(unique_vals)[:1000]
+
+    return {"column": column, "values": unique_vals}
+
+
 # ── GET /api/v1/files/{file_id}/aggregate ────────────────────────────────
 
 @router.get("/{file_id}/aggregate")
@@ -418,6 +471,7 @@ async def get_aggregate(
     file_id: str,
     column: str,
     aggregation: str,
+    filters: Optional[str] = None,  # JSON-encoded list of {column, operator, value}
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_session),
 ):
@@ -434,6 +488,9 @@ async def get_aggregate(
     if file_record.owner_id != user.sub:
         raise _error("FORBIDDEN", "This file does not belong to you.", http_status=403)
             
+    if not column or not column.strip():
+        raise _error("INVALID_COLUMN", "Column parameter is required and cannot be empty.")
+
     valid_aggs = ("sum", "avg", "count", "min", "max")
     if aggregation not in valid_aggs:
         raise _error("INVALID_AGGREGATION", f"Aggregation must be one of {valid_aggs}")
@@ -444,7 +501,38 @@ async def get_aggregate(
         )
     except Exception as exc:
         raise _error("PARSE_ERROR", f"Could not parse file data: {exc}")
-        
+
+    # Apply optional filters
+    if filters:
+        try:
+            filter_list = json.loads(filters)
+            for f in filter_list:
+                fcol = f.get("column")
+                fop  = f.get("operator")
+                fval = f.get("value", "")
+                if not fcol or fcol not in df.columns:
+                    continue
+                col_series = df[fcol]
+                try:
+                    # Try numeric comparison first
+                    num_val = float(fval)
+                    if fop == "eq":  mask = col_series == num_val
+                    elif fop == "ne": mask = col_series != num_val
+                    elif fop == "gt": mask = col_series > num_val
+                    elif fop == "gte": mask = col_series >= num_val
+                    elif fop == "lt": mask = col_series < num_val
+                    elif fop == "lte": mask = col_series <= num_val
+                    else: mask = col_series.astype(str).str.contains(fval, case=False, na=False)
+                except (ValueError, TypeError):
+                    # Fall back to string comparison
+                    str_series = col_series.astype(str)
+                    if fop == "eq":  mask = str_series.str.lower() == fval.lower()
+                    elif fop == "ne": mask = str_series.str.lower() != fval.lower()
+                    elif fop == "contains": mask = str_series.str.contains(fval, case=False, na=False)
+                    else: mask = str_series.str.lower() == fval.lower()
+                df = df[mask]
+        except (json.JSONDecodeError, Exception):
+            pass  # ignore malformed filters, use full dataset
     if column not in df.columns:
         raise _error("INVALID_COLUMN", f"Column '{column}' not found in the dataset.")
         

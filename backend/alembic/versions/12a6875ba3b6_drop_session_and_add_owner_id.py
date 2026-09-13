@@ -45,6 +45,7 @@ def upgrade() -> None:
     with op.batch_alter_table('files', schema=None) as batch_op:
         batch_op.add_column(sa.Column('owner_id', sa.String(length=36), nullable=False))
         batch_op.create_index(batch_op.f('ix_files_owner_id'), ['owner_id'], unique=False)
+        batch_op.drop_index('ix_files_session_id')
         batch_op.drop_column('session_id')
 
     with op.batch_alter_table('prompts', schema=None) as batch_op:
@@ -53,7 +54,6 @@ def upgrade() -> None:
                type_=sa.String(length=30),
                existing_nullable=False,
                existing_server_default=sa.text("'pending'"))
-        batch_op.create_index(batch_op.f('ix_prompts_file_id'), ['file_id'], unique=False)
 
     op.drop_table('sessions')
     # ### end Alembic commands ###

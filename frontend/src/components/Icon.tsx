@@ -158,3 +158,41 @@ export function IconFile({ size = 13, strokeWidth = 1.75 }: IconProps) {
 
 
 
+export function IconUser({ size = 16, strokeWidth = 2, className, style }: IconProps) {
+  return base(size, strokeWidth,
+    <>
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </>,
+    { className, style }
+  )
+}
+
+export function IconCircleUser({ size = 16, strokeWidth = 2, className, style }: IconProps) {
+  return base(size, strokeWidth,
+    <>
+      <circle cx="12" cy="12" r="10" />
+      <circle cx="12" cy="10" r="3" />
+      <path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662" />
+    </>,
+    { className, style }
+  )
+}
+
+export function IconLogOut({ size = 16, strokeWidth = 2, className, style }: IconProps) {
+  return base(size, strokeWidth,
+    <>
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <polyline points="16 17 21 12 16 7" />
+      <line x1="21" y1="12" x2="9" y2="12" />
+    </>,
+    { className, style }
+  )
+}
+
+export function IconChevronDown({ size = 16, strokeWidth = 2, className, style }: IconProps) {
+  return base(size, strokeWidth,
+    <polyline points="6 9 12 15 18 9" />,
+    { className, style }
+  )
+}

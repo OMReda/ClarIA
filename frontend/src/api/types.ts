@@ -32,7 +32,7 @@ export type FileDataResponse = z.infer<typeof FileDataResponseSchema>
 // ── Chart ─────────────────────────────────────────────────────────────────────
 export const ChartPayloadSchema = z.object({
   chart_id: z.string(),
-  chart_type: z.enum(['bar', 'line', 'area', 'pie', 'scatter', 'histogram', 'heatmap']),
+  chart_type: z.enum(['bar', 'line', 'area', 'pie', 'scatter', 'histogram', 'heatmap', 'radar']),
   chart_spec: z.record(z.unknown()),
 })
 export type ChartPayload = z.infer<typeof ChartPayloadSchema>

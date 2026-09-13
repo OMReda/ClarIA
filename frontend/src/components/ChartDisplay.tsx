@@ -1,7 +1,7 @@
 import React from 'react'
 import ReactECharts from 'echarts-for-react'
 import { useStore } from '../store'
-import { BarChart, LineChart, PieChart, Activity, Grip, BarChart2, Target, Grid } from 'lucide-react'
+import { BarChart, LineChart, PieChart, Activity, Grip, BarChart2, Target, Grid, Sparkles } from 'lucide-react'
 import { exportCSV, exportExcel, exportPowerBI, exportPNG, extractDataFromSpec } from '../utils/exportUtils'
 
 const CHART_TYPE_LABELS: Record<string, string> = {
@@ -58,9 +58,9 @@ export function ChartDisplay() {
   const chartRef = React.useRef<ReactECharts>(null)
   const [elapsed, setElapsed] = React.useState(0)
 
-  // Elapsed timer while processing — gives user feedback when Ollama is loading
+  // Elapsed timer while processing OR prompting — gives user feedback when Ollama is loading
   React.useEffect(() => {
-    if (status !== 'processing') { setElapsed(0); return }
+    if (status !== 'processing' && status !== 'prompting') { setElapsed(0); return }
     const t = setInterval(() => setElapsed(s => s + 1), 1000)
     return () => clearInterval(t)
   }, [status])
@@ -87,7 +87,9 @@ export function ChartDisplay() {
     exportPowerBI(rows, cols, `${fileName || 'export'}-powerbi.xlsx`)
   }
 
-  if (status === 'processing') {
+  // 'prompting' = request sent, waiting for worker to pick it up / WS not yet open
+  // 'processing' = WS connected, worker is actively running
+  if (status === 'processing' || status === 'prompting') {
     return (
       <div id="chart-display" aria-live="polite">
         <div className="section-header">
@@ -98,7 +100,7 @@ export function ChartDisplay() {
             </svg>
           </div>
           <div>
-            <p className="section-header__title">Generation du graphique...</p>
+            <p className="section-header__title">Génération du graphique...</p>
             <p className="section-header__sub">L'IA analyse votre fichier</p>
           </div>
         </div>
@@ -108,7 +110,7 @@ export function ChartDisplay() {
             <p>Traitement en cours{elapsed > 0 ? ` (${elapsed}s)` : ''}...</p>
             {elapsed >= 8 && (
               <p style={{ fontSize: 12, color: 'var(--text-tertiary)', marginTop: 4 }}>
-                Ollama charge le modele, cela peut prendre jusqu'a 30-60s au premier appel.
+                Ollama charge le modèle, cela peut prendre jusqu'à 30-60s au premier appel.
               </p>
             )}
           </div>
@@ -116,6 +118,7 @@ export function ChartDisplay() {
       </div>
     )
   }
+
 
   if (!chart) return null
 
@@ -148,7 +151,9 @@ export function ChartDisplay() {
 
         {explanation && (
           <div className="explanation-card animate-fade-in" aria-label="Explication du graphique">
-            <span className="explanation-card__icon" aria-hidden="true">💡</span>
+            <span className="explanation-card__icon" aria-hidden="true" style={{ color: 'var(--blue, #2563eb)', display: 'flex', alignItems: 'center', marginTop: '2px' }}>
+              <Sparkles size={16} strokeWidth={2} />
+            </span>
             <p className="explanation-card__text">{explanation}</p>
           </div>
         )}

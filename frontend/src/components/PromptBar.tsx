@@ -1,18 +1,20 @@
 import React, { useEffect, useState } from 'react'
-import { MessageSquare } from 'lucide-react'
+import { MessageSquare, WifiOff } from 'lucide-react'
 import { openPromptSocket, submitPrompt } from '../api/client'
+import { useProviderStore } from '../store/providerStore'
 import { useStore } from '../store'
 import type { WsEvent } from '../api/types'
 
 export function PromptBar() {
   const [text, setText] = useState('')
+  const { isOllamaOffline } = useProviderStore()
   const {
     fileId, status, lastPromptText,
     setPromptId, setChart, setClarification, setError, setStatus, addToast,
     setActiveWs, setLastPromptText
   } = useStore()
   const isProcessing = status === 'processing' || status === 'prompting'
-  const canSubmit = !!fileId && !isProcessing && ['previewing', 'completed', 'error'].includes(status)
+  const canSubmit = !!fileId && !isProcessing && !isOllamaOffline && ['previewing', 'completed', 'error'].includes(status)
 
   // Restore previous prompt when entering previewing state (e.g. after clicking Retry)
   useEffect(() => {
@@ -74,12 +76,46 @@ export function PromptBar() {
         </div>
       </div>
 
+      {/* Ollama offline banner — auto-hides as soon as Ollama comes back online */}
+      {isOllamaOffline && (
+        <div
+          id="ollama-offline-banner"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            padding: '10px 14px',
+            borderRadius: 8,
+            background: 'rgba(220,38,38,0.08)',
+            border: '1px solid rgba(220,38,38,0.25)',
+            marginBottom: 'var(--space-3)',
+          }}
+          role="alert"
+        >
+          <WifiOff size={16} strokeWidth={2} style={{ color: '#dc2626', flexShrink: 0 }} />
+          <div>
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: '#dc2626' }}>
+              Ollama est hors ligne
+            </p>
+            <p style={{ margin: 0, fontSize: 12, color: '#b91c1c', marginTop: 2 }}>
+              Les requêtes ne peuvent pas être traitées. Lancez{' '}
+              <code style={{ background: 'rgba(185,28,28,0.1)', padding: '1px 5px', borderRadius: 3 }}>ollama serve</code>
+              {' '}ou changez de fournisseur dans les paramètres ⚙.
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="prompt-bar__body">
         <div className="prompt-bar__inner">
           <textarea
             id="prompt-input"
             className="prompt-input"
-            placeholder="Ex : Montre l'évolution des ventes par mois sous forme de courbe…"
+            placeholder={
+              isOllamaOffline
+                ? 'Ollama hors ligne — modifiez le fournisseur dans ⚙ Paramètres'
+                : "Ex : Montre l'évolution des ventes par mois sous forme de courbe…"
+            }
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => {
@@ -98,7 +134,7 @@ export function PromptBar() {
             className="btn btn--primary btn--icon"
             disabled={!canSubmit || !text.trim()}
             aria-label="Envoyer"
-            title="Envoyer (Entrée)"
+            title={isOllamaOffline ? "Ollama hors ligne — impossible d'envoyer" : 'Envoyer (Entrée)'}
           >
             {isProcessing
               ? <span className="spinner spinner--sm spinner--inv" />

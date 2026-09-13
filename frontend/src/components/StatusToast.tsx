@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useStore } from '../store'
 import type { Toast, ToastSeverity } from '../store'
 import { IconCheck, IconX, IconWarning, IconInfo } from './Icon'
@@ -18,16 +18,25 @@ const TITLES: Record<ToastSeverity, string> = {
 }
 
 function ToastItem({ item, onClose }: { item: Toast; onClose: (id: string) => void }) {
+  const [exiting, setExiting] = useState(false)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  const handleDismiss = () => {
+    if (exiting) return
+    setExiting(true)
+    setTimeout(() => {
+      onClose(item.id)
+    }, 350) // Match CSS exit animation duration
+  }
+
   useEffect(() => {
-    timerRef.current = setTimeout(() => onClose(item.id), 5000)
+    timerRef.current = setTimeout(() => handleDismiss(), 4650)
     return () => { if (timerRef.current) clearTimeout(timerRef.current) }
-  }, [item.id, onClose])
+  }, [item.id])
 
   return (
     <div
-      className={`toast toast--${item.severity} toast--visible`}
+      className={`toast toast--${item.severity} ${exiting ? 'toast--exiting' : 'toast--visible'}`}
       role="alert"
       aria-live="assertive"
       id={`toast-${item.id}`}
@@ -41,7 +50,7 @@ function ToastItem({ item, onClose }: { item: Toast; onClose: (id: string) => vo
       </div>
       <button
         className="toast__close"
-        onClick={() => onClose(item.id)}
+        onClick={handleDismiss}
         aria-label="Fermer la notification"
       >
         <IconX size={12} strokeWidth={2.25} />
@@ -50,11 +59,8 @@ function ToastItem({ item, onClose }: { item: Toast; onClose: (id: string) => vo
   )
 }
 
-import { useAutoAnimate } from '@formkit/auto-animate/react'
-
 export function ToastContainer() {
   const { toasts, dismissToast } = useStore()
-  const [parent] = useAutoAnimate<HTMLDivElement>({ duration: 250, easing: 'ease-out' })
 
   return (
     <div
@@ -62,7 +68,6 @@ export function ToastContainer() {
       aria-label="Notifications"
       role="region"
       id="toast-container"
-      ref={parent}
       style={{ pointerEvents: toasts.length ? 'auto' : 'none' }}
     >
       {toasts.map(t => (

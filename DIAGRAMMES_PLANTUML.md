@@ -1007,8 +1007,8 @@ project starts 2026-07-01
 [Interface React (UploadZone, AskiPage, Dashboard)] lasts 10 days
 [Interface React (UploadZone, AskiPage, Dashboard)] starts 2026-07-20
 
-[Tests Pytest — 44 tests, couverture 100%] lasts 8 days
-[Tests Pytest — 44 tests, couverture 100%] starts 2026-07-24
+[Tests Pytest — 40 tests, couverture 100%] lasts 8 days
+[Tests Pytest — 40 tests, couverture 100%] starts 2026-07-24
 
 [Correction bugs & optimisation] lasts 6 days
 [Correction bugs & optimisation] starts 2026-07-26
@@ -1031,7 +1031,7 @@ project starts 2026-07-01
 [Celery + Redis async (WebSocket, rate limiter Lua)] is colored in SeaGreen/White
 
 [Interface React (UploadZone, AskiPage, Dashboard)] is colored in DarkOrange/White
-[Tests Pytest — 44 tests, couverture 100%] is colored in DarkOrange/White
+[Tests Pytest — 40 tests, couverture 100%] is colored in DarkOrange/White
 [Correction bugs & optimisation] is colored in DarkOrange/White
 
 [Rédaction du Rapport PFA & Documentation] is colored in Crimson/White

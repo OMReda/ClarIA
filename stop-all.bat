@@ -41,6 +41,15 @@ if not errorlevel 1 (
     echo  [SKIP] Celery Worker: not running.
 )
 
+:: ── Keycloak Auth ─────────────────────────────────────────────────────────────
+taskkill /fi "WindowTitle eq Keycloak Auth" /f >nul 2>&1
+if not errorlevel 1 (
+    echo  [STOP] Keycloak Auth stopped.
+    set STOPPED=1
+) else (
+    echo  [SKIP] Keycloak Auth: not running.
+)
+
 :: ── Frontend Vite ─────────────────────────────────────────────────────────────
 taskkill /fi "WindowTitle eq Frontend Vite" /f >nul 2>&1
 if not errorlevel 1 (

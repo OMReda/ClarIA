@@ -1,5 +1,6 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { IconEye, IconEyeOff, IconLock, IconSettings, IconX, IconSparkle } from './Icon'
+import { useProviderStore } from '../store/providerStore'
 
 type Provider = 'openai' | 'anthropic' | 'google' | 'local'
 
@@ -195,10 +196,15 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
   const [saved, setSaved] = useState(false)
   const [showKey, setShowKey] = useState(false)
 
+  // Read Ollama status from the shared polling store — no separate fetch needed
+  const { isOllamaOffline, ps } = useProviderStore()
+  const ollamaStatus: 'checking' | 'online' | 'offline' =
+    ps === null ? 'checking' : isOllamaOffline ? 'offline' : 'online'
+
   const providerMeta = PROVIDERS.find(p => p.value === cfg.provider)!
   const keyValidation = getValidationState(cfg.provider, cfg.apiKey)
   const theme = PROVIDER_THEMES[cfg.provider]
-  
+
   const themeStyle = {
     '--provider-primary': theme.primary,
     '--provider-border': theme.border,
@@ -343,7 +349,7 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
                   spellCheck={false}
                 />
                 <button
-                  className="api-key-toggle"
+                  className={`api-key-toggle ${showKey ? 'api-key-toggle--active' : ''}`}
                   type="button"
                   onClick={() => setShowKey(v => !v)}
                   title={showKey ? 'Masquer' : 'Afficher'}
@@ -379,6 +385,32 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
           {/* Ollama instructions */}
           {cfg.provider === 'local' && (
             <div className="card--flat" style={{ padding: 'var(--space-4)', marginBottom: '14px', borderRadius: 'var(--radius-sm)' }}>
+
+              {/* Live status row */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 'var(--space-3)' }}>
+                {ollamaStatus === 'checking' && (
+                  <><div className="spinner spinner--sm" /><span style={{ fontSize: 12, color: 'var(--text-2)' }}>Vérification…</span></>
+                )}
+                {ollamaStatus === 'online' && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 20, background: 'rgba(22,163,74,0.1)', border: '1px solid rgba(22,163,74,0.25)' }}>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#16a34a', display: 'inline-block' }} />
+                    <span style={{ fontSize: 12, fontWeight: 600, color: '#16a34a' }}>Ollama en ligne</span>
+                  </div>
+                )}
+                {ollamaStatus === 'offline' && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 20, background: 'rgba(220,38,38,0.1)', border: '1px solid rgba(220,38,38,0.25)' }}>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#dc2626', display: 'inline-block' }} />
+                    <span style={{ fontSize: 12, fontWeight: 600, color: '#dc2626' }}>Ollama hors ligne — indisponible</span>
+                  </div>
+                )}
+              </div>
+
+              {ollamaStatus === 'offline' && (
+                <p style={{ fontSize: 12, color: '#dc2626', marginBottom: 'var(--space-3)', lineHeight: 1.5 }}>
+                  Ollama n'est pas accessible. Lancez-le avec les commandes ci-dessous, puis sélectionnez à nouveau ce fournisseur pour actualiser.
+                </p>
+              )}
+
               <p className="text-sm" style={{ color: 'var(--text-2)', marginBottom: 'var(--space-2)' }}>
                 Pour utiliser Ollama localement :
               </p>
@@ -397,8 +429,14 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
             className="btn btn--primary"
             style={{ width: '100%', height: '38px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
             onClick={save}
-            disabled={saving || saved || (cfg.provider !== 'local' && keyValidation !== 'valid')}
-            title={cfg.provider !== 'local' && keyValidation !== 'valid' ? 'Entrez une clé API valide pour pouvoir enregistrer' : ''}
+            disabled={saving || saved || (cfg.provider !== 'local' && keyValidation !== 'valid') || (cfg.provider === 'local' && ollamaStatus === 'offline')}
+            title={
+              cfg.provider === 'local' && ollamaStatus === 'offline'
+                ? 'Ollama est hors ligne — impossible d\'enregistrer ce fournisseur'
+                : cfg.provider !== 'local' && keyValidation !== 'valid'
+                  ? 'Entrez une clé API valide pour pouvoir enregistrer'
+                  : ''
+            }
             id="save-settings-btn"
           >
             {saving ? (

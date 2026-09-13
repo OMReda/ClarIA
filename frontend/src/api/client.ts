@@ -3,6 +3,7 @@ import { FileUploadResponseSchema, FileDataResponseSchema } from './types'
 import type { FileUploadResponse, FileDataResponse } from './types'
 import { getLLMConfig, getExplanationMode } from '../components/SettingsPanel'
 import { generateUUID } from '../utils/uuid'
+import { keycloak } from '../auth/KeycloakProvider'
 
 const SESSION_KEY = 'plateforme_session_id'
 
@@ -17,9 +18,21 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
-// Inject session ID only — LLM credentials are scoped to LLM-specific calls below
-api.interceptors.request.use((config) => {
+// Inject session ID and Keycloak Bearer Token
+api.interceptors.request.use(async (config) => {
   config.headers['X-Session-ID'] = sessionId
+
+  if (keycloak && keycloak.authenticated && keycloak.token) {
+    // If the token is about to expire, try to update it before sending the request
+    try {
+      await keycloak.updateToken(30)
+      config.headers['Authorization'] = `Bearer ${keycloak.token}`
+    } catch (error) {
+      console.warn("Failed to refresh token", error)
+      keycloak.login()
+    }
+  }
+
   return config
 })
 
@@ -70,7 +83,9 @@ export async function getFileData(fileId: string): Promise<FileDataResponse> {
 export async function getDashboardConfig(
   fileId: string
 ): Promise<Record<string, any>> {
-  const { data } = await api.get(`/files/${fileId}/dashboard-config`)
+  const { data } = await api.get(`/files/${fileId}/dashboard-config`, {
+    params: { _t: Date.now() }
+  })
   return data.dashboard_config || {}
 }
 
@@ -106,11 +121,23 @@ export async function clarifyPrompt(
   return data
 }
 
-export async function fetchKPIAggregate(fileId: string, column: string, aggregation: string): Promise<{ value: number }> {
-  const { data } = await api.get(`/files/${fileId}/aggregate`, {
-    params: { column, aggregation }
-  })
+export async function fetchKPIAggregate(
+  fileId: string,
+  column: string,
+  aggregation: string,
+  filters?: Array<{ column: string; operator: string; value: string }>
+): Promise<{ value: number }> {
+  const params: Record<string, any> = { column, aggregation }
+  if (filters && filters.length > 0) {
+    params.filters = JSON.stringify(filters)
+  }
+  const { data } = await api.get(`/files/${fileId}/aggregate`, { params })
   return data
+}
+
+export async function fetchUniqueValues(fileId: string, column: string): Promise<string[]> {
+  const { data } = await api.get(`/files/${fileId}/unique-values`, { params: { column } })
+  return data.values as string[]
 }
 
 export async function getHealthConfig() {
@@ -137,8 +164,39 @@ export async function getProviderStatus(): Promise<ProviderStatus> {
 
 // ── WebSocket factory ─────────────────────────────────────────────────────────
 
-export function openPromptSocket(promptId: string): WebSocket {
+export async function openPromptSocket(promptId: string): Promise<WebSocket> {
   const proto = window.location.protocol === 'https:' ? 'wss' : 'ws'
-  const url = `${proto}://${window.location.host}/ws/prompts/${promptId}?session_id=${sessionId}`
+  let url = `${proto}://${window.location.host}/ws/prompts/${promptId}?session_id=${sessionId}`
+  if (keycloak && keycloak.authenticated && keycloak.token) {
+    try {
+      await keycloak.updateToken(30)
+    } catch {
+      // Token refresh failed — still attempt with the current token
+    }
+    url += `&token=${keycloak.token}`
+  }
   return new WebSocket(url)
+}
+
+// ── Admin endpoints ───────────────────────────────────────────────────────────
+
+export async function fetchAdminUsers(): Promise<any[]> {
+  const { data } = await api.get('/platform-users/users')
+  return data
+}
+
+export async function createAdminUser(payload: any): Promise<void> {
+  await api.post('/platform-users/users', payload)
+}
+
+export async function updateAdminUser(userId: string, payload: any): Promise<void> {
+  await api.put(`/platform-users/users/${userId}`, payload)
+}
+
+export async function deleteAdminUser(userId: string): Promise<void> {
+  await api.delete(`/platform-users/users/${userId}`)
+}
+
+export async function setAdminUserPassword(userId: string, payload: any): Promise<void> {
+  await api.put(`/platform-users/users/${userId}/password`, payload)
 }

@@ -25,7 +25,7 @@ export function ClarificationDialog() {
 
       // Open a new WebSocket for the re-run.
       // setActiveWs will close the old PromptBar socket before registering this one.
-      const ws = openPromptSocket(currentPromptId!)
+      const ws = await openPromptSocket(currentPromptId!)
       ws.onmessage = (ev) => {
         try {
           const event = JSON.parse(ev.data)

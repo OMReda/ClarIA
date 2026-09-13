@@ -12,7 +12,6 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, us
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, horizontalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { restrictToHorizontalAxis } from '@dnd-kit/modifiers'
-import { useAutoAnimate } from '@formkit/auto-animate/react'
 
 // Force ECharts to resize perfectly even when its container is animated by react-grid-layout
 function ResponsiveChart({ option }: { option: any }) {
@@ -68,6 +67,7 @@ function SortableKPIItem({ kpi, onEditKPI, setChartToDelete, isDeleting }: { kpi
         aggregation={kpi.aggregation}
         label={kpi.label}
         format={kpi.format}
+        filters={kpi.filters ?? []}
         onEdit={onEditKPI}
         onDelete={setChartToDelete}
       />
@@ -77,7 +77,7 @@ function SortableKPIItem({ kpi, onEditKPI, setChartToDelete, isDeleting }: { kpi
 
 
 export function DashboardView({ onAddChart, onEditChart, onAddKPI, onEditKPI }: { onAddChart: () => void, onEditChart: (id: string) => void, onAddKPI: () => void, onEditKPI: (id: string) => void }) {
-  const { dashboardCharts, saveDashboardLayout, removeChartFromDashboard, loadDashboardConfig, fileId, reorderKPIs } = useStore()
+  const { dashboardCharts, saveDashboardLayout, removeChartFromDashboard, loadDashboardConfig, fileId, reorderKPIs, isDashboardLoading } = useStore()
   const { width, containerRef, mounted } = useContainerWidth()
   const [chartToDelete, setChartToDelete] = React.useState<string | null>(null)
   const [chartActuallyDeleting, setChartActuallyDeleting] = React.useState<string | null>(null)
@@ -96,10 +96,8 @@ export function DashboardView({ onAddChart, onEditChart, onAddKPI, onEditKPI }: 
     })
   )
 
-  const [animationParent, enableAnimations] = useAutoAnimate<HTMLDivElement>({ duration: 250, easing: 'ease-in-out' })
-
   const handleDragStart = () => {
-    enableAnimations(false)
+    // Intentionally empty: removed auto-animate conflict
   }
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -111,10 +109,6 @@ export function DashboardView({ onAddChart, onEditChart, onAddKPI, onEditKPI }: 
         reorderKPIs(oldIndex, newIndex)
       }
     }
-    // Re-enable layout animations after the DOM settles
-    setTimeout(() => {
-      enableAnimations(true)
-    }, 100)
   }
 
   const layout = useMemo(() => {
@@ -163,6 +157,17 @@ export function DashboardView({ onAddChart, onEditChart, onAddKPI, onEditKPI }: 
               </div>
             ))}
           </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (isDashboardLoading) {
+    return (
+      <div className="db-empty animate-fade-up" style={{ alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
+          <div className="spinner spinner--lg" />
+          <p style={{ color: 'var(--text-tertiary)', fontSize: 14, fontWeight: 500 }}>Chargement du tableau de bord…</p>
         </div>
       </div>
     )
@@ -230,7 +235,7 @@ export function DashboardView({ onAddChart, onEditChart, onAddKPI, onEditKPI }: 
         <div style={{ paddingBottom: 'var(--space-4)' }}>
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd} modifiers={[restrictToHorizontalAxis]}>
             <SortableContext items={kpis.map(k => k.id)} strategy={horizontalListSortingStrategy}>
-              <div className="dashboard-kpi-list" ref={animationParent} style={{ display: 'flex', flexWrap: 'nowrap', gap: 'var(--space-4)', overflowX: 'auto', paddingBottom: 16 }}>
+              <div className="dashboard-kpi-list" style={{ display: 'flex', flexWrap: 'nowrap', gap: 'var(--space-4)', overflowX: 'auto', paddingBottom: 16 }}>
                 {kpis.map(kpi => (
                   <SortableKPIItem
                     key={kpi.id}

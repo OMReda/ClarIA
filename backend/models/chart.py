@@ -22,7 +22,7 @@ class Chart(Base):
     )
     chart_type: Mapped[str] = mapped_column(
         String(20),
-        CheckConstraint("chart_type IN ('bar','line','pie','scatter','histogram')"),
+        CheckConstraint("chart_type IN ('bar','line','pie','scatter','histogram','area','radar','heatmap')"),
         nullable=False,
     )
     chart_spec: Mapped[dict] = mapped_column(JSON, nullable=False)

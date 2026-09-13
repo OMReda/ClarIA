@@ -14,6 +14,7 @@ import re
 from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
+from rapidfuzz import fuzz
 
 SUPPORTED_CHART_TYPES = {"bar", "line", "pie", "scatter", "histogram", "area", "radar", "heatmap"}
 
@@ -31,8 +32,8 @@ _AREA_KW = [
     "aire", "cumulé", "cumulatif", "area"
 ]
 _PIE_KW = [
-    "camembert", "pie", "proportion", "part de", "pourcentage",
-    "percentage", "répartition par", "repartition par", "répartition", "repartition", "donut", "part"
+    "camembert", "cammembert", "camenbert", "pie", "proportion", "part de", "pourcentage",
+    "percentage", "répartition par", "repartition par", "répartition", "repartition", "donut"
 ]
 # Bare 'répartition'/'repartition' is ambiguous: it resolves to pie when categorical
 # columns are present, but falls through to histogram disambiguation when the dataset
@@ -47,7 +48,8 @@ _BAR_KW = [
     "groupe", "groupees", "groupes",
 ]
 _RADAR_KW = [
-    "radar", "toile d'araignee", "araignee", "spider", "web chart",
+    "radar", "rdar", "rader", "radr", "radare", "raddar",
+    "toile d'araignee", "araignee", "spider", "web chart",
     "polygone", "radial",
 ]
 _HEATMAP_KW = [
@@ -60,6 +62,89 @@ _COMPARE_KW = [
     "compare", "comparer", "versus", "vs", "comparaison",
     "par rapport", "between", "entre",
 ]
+
+_COLORS_MAP = {
+    # Basic
+    "rouge": "#ef4444", "red": "#ef4444",
+    "bleu": "#3b82f6", "blue": "#3b82f6",
+    "vert": "#10b981", "green": "#10b981",
+    "jaune": "#eab308", "yellow": "#eab308",
+    "orange": "#f97316", "orangee": "#f97316",
+    "violet": "#8b5cf6", "purple": "#8b5cf6", "mauve": "#c084fc",
+    "rose": "#ec4899", "pink": "#ec4899",
+    "noir": "#000000", "black": "#000000",
+    "gris": "#6b7280", "gray": "#6b7280", "grey": "#6b7280",
+    "blanc": "#ffffff", "white": "#ffffff",
+    "cyan": "#06b6d4",
+    "magenta": "#d946ef",
+    "marron": "#8b4513", "brown": "#8b4513",
+    "beige": "#f5f5dc", "kaki": "#f0e68c", "khaki": "#f0e68c",
+    "indigo": "#4f46e5",
+    "turquoise": "#14b8a6", "teal": "#14b8a6",
+    "olive": "#808000", "corail": "#ff7f50", "coral": "#ff7f50",
+    "or": "#ffd700", "gold": "#ffd700", "argent": "#c0c0c0", "silver": "#c0c0c0",
+    "bronze": "#cd7f32", "bordeaux": "#800000", "maroon": "#800000",
+    "prune": "#dda0dd", "plum": "#dda0dd",
+    
+    # Pastels
+    "pastel rouge": "#fca5a5", "pastel red": "#fca5a5",
+    "pastel bleu": "#93c5fd", "pastel blue": "#93c5fd",
+    "pastel vert": "#6ee7b7", "pastel green": "#6ee7b7",
+    "pastel jaune": "#fde047", "pastel yellow": "#fde047",
+    "pastel orange": "#fdba74", "pastel purple": "#c4b5fd",
+    "pastel violet": "#c4b5fd", "pastel pink": "#f9a8d4",
+    "pastel rose": "#f9a8d4", "pastel cyan": "#67e8f9",
+    "pastel olive": "#d4d4aa", "pastel marron": "#d2b48c",
+    "pastel corail": "#ffb3a7", "pastel magenta": "#f098e9",
+    "saumon": "#fca5a5", "salmon": "#fca5a5",
+    "peche": "#ffdab9", "peach": "#ffdab9",
+    "menthe": "#98ff98", "mint": "#98ff98",
+    "lilas": "#c8a2c8", "lilac": "#c8a2c8",
+    "lavande": "#e6e6fa", "lavender": "#e6e6fa",
+    
+    # Dark variants
+    "rouge fonce": "#991b1b", "dark red": "#991b1b",
+    "bleu fonce": "#1e3a8a", "dark blue": "#1e3a8a", "marine": "#1e3a8a", "navy": "#1e3a8a",
+    "vert fonce": "#065f46", "dark green": "#065f46",
+    "jaune fonce": "#854d0e", "dark yellow": "#854d0e",
+    "orange fonce": "#9a3412", "dark orange": "#9a3412",
+    "violet fonce": "#4c1d95", "dark purple": "#4c1d95",
+    "rose fonce": "#831843", "dark pink": "#831843",
+    "gris fonce": "#374151", "dark gray": "#374151", "dark grey": "#374151",
+    "cyan fonce": "#0891b2", "dark cyan": "#0891b2",
+    "magenta fonce": "#86198f", "dark magenta": "#86198f",
+    "marron fonce": "#3f1d0b", "dark brown": "#3f1d0b",
+    "olive fonce": "#556b2f", "dark olive": "#556b2f",
+    "corail fonce": "#cd5b45", "dark coral": "#cd5b45",
+    "or fonce": "#b8860b", "dark gold": "#b8860b",
+    
+    # Light variants
+    "rouge clair": "#f87171", "light red": "#f87171",
+    "bleu clair": "#60a5fa", "light blue": "#60a5fa", "ciel": "#7dd3fc", "sky": "#7dd3fc",
+    "vert clair": "#34d399", "light green": "#34d399",
+    "jaune clair": "#fef08a", "light yellow": "#fef08a",
+    "orange clair": "#fb923c", "light orange": "#fb923c",
+    "violet clair": "#a78bfa", "light purple": "#a78bfa",
+    "rose clair": "#f472b6", "light pink": "#f472b6",
+    "gris clair": "#9ca3af", "light gray": "#9ca3af", "light grey": "#9ca3af",
+    "cyan clair": "#22d3ee", "light cyan": "#22d3ee",
+    "magenta clair": "#e879f9", "light magenta": "#e879f9",
+    "marron clair": "#d2b48c", "light brown": "#d2b48c", "tan": "#d2b48c",
+    "olive clair": "#6b8e23", "light olive": "#6b8e23",
+    "corail clair": "#f08080", "light coral": "#f08080",
+    "or clair": "#eedd82", "light gold": "#eedd82",
+    
+    # Vibrant & Feminine variants
+    "fuchsia": "#ff00ff", "fuschia": "#ff00ff",
+    "hot pink": "#ff69b4", "rose vif": "#ff69b4",
+    "rose gold": "#b76e79", "or rose": "#b76e79",
+    "blush": "#de5d83", "fard": "#de5d83",
+    "pervenche": "#ccccff", "periwinkle": "#ccccff",
+    "framboise": "#e30b5d", "raspberry": "#e30b5d",
+    "cerise": "#de3163", "cherry": "#de3163",
+    "orchidee": "#da70d6", "orchid": "#da70d6",
+    "lavender blush": "#fff0f5",
+}
 
 # Strong aggregate/ranking signals — when these appear the user wants a bar even
 # if the dataset has a date column (e.g. "top 5 des ventes par produit cette annee")
@@ -91,12 +176,88 @@ import unicodedata
 def _strip_accents(s: str) -> str:
     return ''.join(c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn')
 
+def _extract_colors_from_prompt(prompt_text: str) -> List[str]:
+    if not prompt_text:
+        return []
+        
+    found_colors = []
+    
+    # 1. Extract raw hex codes first (e.g., #1ABC9C, #FFF)
+    hex_matches = re.findall(r'#[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?\b', prompt_text)
+    for h in hex_matches:
+        h_lower = h.lower()
+        if h_lower not in found_colors:
+            found_colors.append(h_lower)
+            
+    text_norm = _strip_accents(prompt_text.lower())
+    tokens = re.findall(r'\b\w+\b', text_norm)
+    
+    # 2. Extract named colors using fuzzy matching
+    
+    # Sort keys by length descending to match multi-word colors (like "bleu clair") before single words
+    sorted_color_keys = sorted(_COLORS_MAP.keys(), key=lambda x: len(x.split()), reverse=True)
+    
+    matched_indices = set()
+    
+    for color_name in sorted_color_keys:
+        color_tokens = color_name.split()
+        n = len(color_tokens)
+        
+        for i in range(len(tokens) - n + 1):
+            if any(idx in matched_indices for idx in range(i, i+n)):
+                continue
+                
+            ngram = " ".join(tokens[i:i+n])
+            score = fuzz.ratio(ngram, color_name)
+            
+            # Shorter keywords need tighter thresholds to prevent false positives
+            if len(color_name) <= 4:
+                threshold = 95
+            elif len(color_name) <= 6:
+                threshold = 85
+            else:
+                threshold = 80
+                
+            if score >= threshold:
+                color_hex = _COLORS_MAP[color_name]
+                if color_hex not in found_colors:
+                    found_colors.append(color_hex)
+                # Mark these tokens as consumed
+                for j in range(i, i+n):
+                    matched_indices.add(j)
+                    
+    return found_colors
+
 def _contains_word(text: str, keywords: List[str]) -> bool:
     text_norm = _strip_accents(text.lower())
+    tokens = re.findall(r'\b\w+\b', text_norm)
+    
     for kw in keywords:
         kw_norm = _strip_accents(kw.lower())
+        
+        # 1. Exact regex match (fastest and handles word boundaries properly)
         if re.search(rf"\b{re.escape(kw_norm)}\b", text_norm):
             return True
+            
+        # 2. Fuzzy match via n-grams
+        kw_tokens = re.findall(r'\b\w+\b', kw_norm)
+        n = len(kw_tokens)
+        if n == 0:
+            continue
+            
+        for i in range(len(tokens) - n + 1):
+            ngram = " ".join(tokens[i:i+n])
+            # Short keywords (<= 5 chars) require exact match to avoid false positives.
+            # e.g. 'par' (very common in French) would score 85.7% against 'part',
+            # causing bar prompts to be detected as pie.
+            if len(kw_norm) <= 5:
+                if ngram == kw_norm:
+                    return True
+            else:
+                score = fuzz.ratio(ngram, kw_norm)
+                if score >= 85:  # 85 allows ~1 typo in a 6-7 letter word
+                    return True
+                    
     return False
 
 import logging
@@ -140,7 +301,7 @@ def detect_chart_type(
         # not pie. Only resolve to pie when categorical columns are present OR when an
         # unambiguous pie keyword (camembert, pie, proportion, part de, donut) is used.
         _UNAMBIGUOUS_PIE_KW = [
-            "camembert", "pie", "proportion", "part de", "pourcentage", "percentage", "donut"
+            "camembert", "cammembert", "camenbert", "pie", "proportion", "part de", "pourcentage", "percentage", "donut"
         ]
         is_bare_repartition = (
             _contains_word(prompt_text, _REPARTITION_BARE_KW)
@@ -252,6 +413,7 @@ def build_chart_spec(
     x_col: Optional[str] = None,
     y_col: Optional[str] = None,
     auto_pivot: bool = False,
+    prompt_text: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Convert an aggregated result DataFrame to an ECharts option dict.
@@ -353,8 +515,12 @@ def build_chart_spec(
         title_text = f"Radar: {', '.join(_format_col(y) for y in y_cols)}"
 
     elif chart_type == "heatmap":
-        spec = _heatmap(df, non_numeric_cols, numeric_cols)
-        title_text = "Heatmap"
+        # Pick row_col, col_col (two categoricals) and val_col (first numeric)
+        row_col = x_col or (non_numeric_cols[0] if len(non_numeric_cols) >= 1 else df.columns[0])
+        col_col = y_col or (non_numeric_cols[1] if len(non_numeric_cols) >= 2 else (non_numeric_cols[0] if non_numeric_cols else df.columns[min(1, len(df.columns)-1)]))
+        val_col_h = numeric_cols[0] if numeric_cols else df.columns[-1]
+        spec = _heatmap(df, row_col, col_col, val_col_h)
+        title_text = f"Heatmap: {_format_col(val_col_h)} par {_format_col(row_col)} × {_format_col(col_col)}"
 
     else:
         # bar (default)
@@ -372,6 +538,11 @@ def build_chart_spec(
         spec["title"] = {}
     spec["title"]["text"] = title_text
     spec["title"]["show"] = False
+
+    if prompt_text:
+        extracted_colors = _extract_colors_from_prompt(prompt_text)
+        if extracted_colors:
+            spec["color"] = extracted_colors
 
     return spec
 
@@ -431,86 +602,6 @@ def _line(df: pd.DataFrame, x_col: str, y_cols: List[str]) -> Dict[str, Any]:
         "grid": {"left": "3%", "right": "4%", "bottom": "3%", "containLabel": True},
     }
 
-def _heatmap(df: pd.DataFrame, non_numeric_cols: List[str], numeric_cols: List[str]) -> Dict[str, Any]:
-    # Support long format (e.g. Country, Month, Sales) or wide format (Country, Jan, Feb, Mar...)
-    if len(non_numeric_cols) >= 2 and len(numeric_cols) >= 1:
-        # Long format
-        y_col = non_numeric_cols[0]
-        x_col = non_numeric_cols[1]
-        val_col = numeric_cols[0]
-        
-        y_labels = sorted(list(df[y_col].dropna().unique()))
-        x_labels = sorted(list(df[x_col].dropna().unique()))
-        y_map = {lbl: idx for idx, lbl in enumerate(y_labels)}
-        x_map = {lbl: idx for idx, lbl in enumerate(x_labels)}
-        
-        data = []
-        min_val, max_val = float('inf'), float('-inf')
-        for _, row in df.iterrows():
-            y_val, x_val, val = row[y_col], row[x_col], row[val_col]
-            if pd.isna(y_val) or pd.isna(x_val) or pd.isna(val): continue
-            if hasattr(val, "item"): val = val.item()
-            data.append([x_map[x_val], y_map[y_val], val])
-            min_val = min(min_val, val)
-            max_val = max(max_val, val)
-            
-    else:
-        # Wide format (pivot table)
-        y_col = non_numeric_cols[0] if non_numeric_cols else df.columns[0]
-        x_labels = [c for c in numeric_cols]
-        y_labels = sorted(list(df[y_col].dropna().unique()))
-        y_map = {lbl: idx for idx, lbl in enumerate(y_labels)}
-        
-        data = []
-        min_val, max_val = float('inf'), float('-inf')
-        for _, row in df.iterrows():
-            y_val = row[y_col]
-            if pd.isna(y_val): continue
-            y_idx = y_map[y_val]
-            for x_idx, x_col in enumerate(x_labels):
-                val = row[x_col]
-                if pd.isna(val): continue
-                if hasattr(val, "item"): val = val.item()
-                data.append([x_idx, y_idx, val])
-                min_val = min(min_val, val)
-                max_val = max(max_val, val)
-
-    if min_val == float('inf'):
-        min_val, max_val = 0, 100
-
-    return {
-        "tooltip": {"position": "top"},
-        "grid": {"left": "10%", "right": "5%", "bottom": "15%", "containLabel": True},
-        "xAxis": {
-            "type": "category",
-            "data": [str(x) for x in x_labels],
-            "splitArea": {"show": True}
-        },
-        "yAxis": {
-            "type": "category",
-            "data": [str(y) for y in y_labels],
-            "splitArea": {"show": True}
-        },
-        "visualMap": {
-            "min": min_val,
-            "max": max_val,
-            "calculable": True,
-            "orient": "horizontal",
-            "left": "center",
-            "bottom": "0%"
-        },
-        "series": [{
-            "type": "heatmap",
-            "data": data,
-            "label": {"show": False},
-            "emphasis": {
-                "itemStyle": {
-                    "shadowBlur": 10,
-                    "shadowColor": "rgba(0, 0, 0, 0.5)"
-                }
-            }
-        }]
-    }
 
 def _area(df: pd.DataFrame, x_col: str, y_cols: List[str]) -> Dict[str, Any]:
     series = []
@@ -726,10 +817,21 @@ def _heatmap(
     cols = [str(c) for c in pivot.columns.tolist()]
 
     data = []
-    for ri, r in enumerate(pivot.index):
-        for ci, c in enumerate(pivot.columns):
-            v = pivot.loc[r, c]
-            data.append([ci, ri, round(float(v), 4) if pd.notna(v) else 0])
+    for ri in range(len(pivot.index)):
+        for ci in range(len(pivot.columns)):
+            # iloc is the ONLY guaranteed scalar accessor — .at/.loc can still return
+            # a Series when there are duplicate labels or MultiIndex edge cases.
+            raw = pivot.iloc[ri, ci]
+            # Flatten a size-1 Series to scalar (last-resort safety net)
+            if hasattr(raw, "__len__") and not isinstance(raw, str):
+                raw = raw.iloc[0] if len(raw) > 0 else float("nan")
+            try:
+                v = float(raw)
+                val = round(v, 4) if v == v else 0  # NaN check: NaN != NaN
+            except (TypeError, ValueError):
+                val = 0
+            data.append([ci, ri, val])
+
 
     all_vals = [d[2] for d in data if d[2] is not None]
     min_val = min(all_vals, default=0)

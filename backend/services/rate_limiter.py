@@ -1,8 +1,8 @@
 """
 rate_limiter.py — Redis-based sliding-window rate limiter.
 
-30 prompts / hour / session (configurable via RATE_LIMIT_PROMPTS_PER_HOUR).
-Key: ratelimit:session:{session_id}:{hour_bucket}  TTL = 3600 s
+30 prompts / hour / user (configurable via RATE_LIMIT_PROMPTS_PER_HOUR).
+Key: ratelimit:user:{user_id}:{hour_bucket}  TTL = 3600 s
 
 Fix: INCR + EXPIRE are now executed atomically via a Lua script.
 The previous pipeline approach had a race: if the connection dropped after

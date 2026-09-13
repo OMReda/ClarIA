@@ -9,4 +9,4 @@ set KC_BOOTSTRAP_ADMIN_PASSWORD=CqKiAA2CEdMWXLixQfWN3kkqVjmw72D_
 :: start-keycloak.bat --import-realm
 
 cd infra\keycloak\keycloak-26.7.0\bin
-kc.bat start-dev %*
+kc.bat start-dev --proxy-headers xforwarded %*

@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 import shutil
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -125,11 +126,20 @@ def process_prompt(self, prompt_id: str, llm_config: dict | None = None) -> None
 
         # ── Configure PandasAI with per-request LLM settings ──────────────────────
         try:
-            configure_pandasai(llm_config=llm_config or {})
+            actual_provider = configure_pandasai(llm_config=llm_config or {})
         except Exception as exc:
             logger.error("PandasAI LLM configuration failed: %s", exc)
             _fail_prompt(db, prompt, f"LLM configuration error: {exc}", prompt_id)
             return
+
+        # Notify user immediately if Ollama was down and a fallback was used
+        if actual_provider.endswith("-fallback"):
+            fb_label = {"google-fallback": "Google", "openai-fallback": "OpenAI", "anthropic-fallback": "Anthropic"}.get(actual_provider, "cloud")
+            _publish_ws_event(prompt_id, {
+                "status": "processing",
+                "fallback_notice": f"Ollama hors ligne — réponse générée via {fb_label}",
+            })
+
 
         # ── Load file ─────────────────────────────────────────────────────────
         file = db.get(FileModel, prompt.file_id)
@@ -179,7 +189,6 @@ def process_prompt(self, prompt_id: str, llm_config: dict | None = None) -> None
             user_text = f"{user_text}\n[Clarification]: {prompt.clarification_answer}"
 
         # ── Proactive Fuzzy Matching ──────────────────────────────────────────
-        import re
         refs = extract_column_references(user_text, column_names)
         for ref in refs:
             match = find_best_column(ref, column_names)
@@ -259,7 +268,6 @@ def process_prompt(self, prompt_id: str, llm_config: dict | None = None) -> None
                     friendly_msg = "Le modèle local n'a pas réussi à formater le code correctement. Veuillez réessayer ou utiliser un modèle plus performant (ex: Gemini ou un modèle local plus large)."
                 else:
                     # If it's another API error, try to extract a clean message if possible, or fall back
-                    import re
                     match = re.search(r'"message":\s*"([^"]+)"', exc_str)
                     if match:
                         friendly_msg = f"Erreur de l'IA : {match.group(1)}"
@@ -268,9 +276,8 @@ def process_prompt(self, prompt_id: str, llm_config: dict | None = None) -> None
                 return
             
             # 2. Post-execution clarification: only trigger if the runtime error mentions an unknown column
-            import re
             clarification_needed = None
-            quoted_terms = re.findall(r"['\"](.*?)['\"]", exc_str)
+            quoted_terms = re.findall(r"['\"](.+?)['\"]", exc_str)
             
             for term in quoted_terms:
                 if len(term) < 2 or term in column_names:
@@ -339,10 +346,21 @@ def process_prompt(self, prompt_id: str, llm_config: dict | None = None) -> None
             chart_spec = build_chart_spec(
                 result_df, chart_type,
                 auto_pivot=is_comparison,
+                prompt_text=user_text,
             )
         except Exception as exc:
             logger.exception("Chart spec build failed for prompt %s", prompt_id)
-            _fail_prompt(db, prompt, f"Could not build chart: {exc}", prompt_id)
+            # Map common internal errors to friendly user-facing messages
+            exc_str = str(exc)
+            if "missing" in exc_str and "argument" in exc_str:
+                user_msg = "Impossible de générer le graphique : les données retournées ne correspondent pas au format attendu. Essayez de préciser les colonnes dans votre requête (ex. 'par Vendeur', 'par Matériau')."
+            elif "KeyError" in type(exc).__name__ or "key" in exc_str.lower():
+                user_msg = "Une colonne mentionnée dans votre requête est introuvable dans les données. Vérifiez les noms de colonnes."
+            elif "empty" in exc_str.lower() or "no data" in exc_str.lower():
+                user_msg = "L'analyse n'a retourné aucune donnée exploitable pour construire ce graphique."
+            else:
+                user_msg = "La génération du graphique a échoué. Essayez de reformuler votre requête avec des colonnes plus précises."
+            _fail_prompt(db, prompt, user_msg, prompt_id)
             return
 
         # ── Persist chart ─────────────────────────────────────────────────────
@@ -440,36 +458,37 @@ def _fail_prompt(db, prompt: Optional[Prompt], message: str, prompt_id: str) -> 
 
 # ── Background jobs ───────────────────────────────────────────────────────────
 
-@celery_app.task(name="cleanup_expired_sessions")
-def cleanup_expired_sessions() -> None:
+@celery_app.task(name="cleanup_expired_files")
+def cleanup_expired_files() -> None:
     """
-    Delete sessions older than the configured TTL (default 7 days).
-    Deletes the on-disk storage directory for the session's files,
-    then deletes the session from the DB (cascading to DB files/prompts/charts).
+    Delete File records (and their on-disk storage) older than SESSION_TTL_DAYS.
+    Runs as a periodic Celery beat task.
+
+    NOTE: The previous task used SessionModel which no longer exists.
+    The app now stores ownership on FileModel.owner_id (Keycloak user ID).
+    TTL is measured from FileModel.created_at.
     """
     db = get_sync_session()
     try:
         cutoff = datetime.now(tz=timezone.utc) - timedelta(days=settings.session_ttl_days)
-        result = db.execute(select(SessionModel).where(SessionModel.last_active_at < cutoff))
-        expired_sessions = result.scalars().all()
-        
-        for session in expired_sessions:
+        result = db.execute(select(FileModel).where(FileModel.created_at < cutoff))
+        expired_files = result.scalars().all()
+
+        for file_record in expired_files:
             # 1. Physical disk cleanup
-            # Files are stored in settings.storage_path / {file_id}
-            for file_record in session.files:
-                storage_dir = Path(settings.storage_path) / str(file_record.id)
-                if storage_dir.exists() and storage_dir.is_dir():
-                    shutil.rmtree(storage_dir, ignore_errors=True)
-                    
-            # 2. DB cleanup (cascade deletes files, prompts, charts)
-            db.delete(session)
-            
-        if expired_sessions:
+            storage_dir = Path(settings.storage_path) / str(file_record.id)
+            if storage_dir.exists() and storage_dir.is_dir():
+                shutil.rmtree(storage_dir, ignore_errors=True)
+
+            # 2. DB cleanup (cascade deletes prompts + charts)
+            db.delete(file_record)
+
+        if expired_files:
             db.commit()
-            logger.info("Cleaned up %d expired sessions.", len(expired_sessions))
-            
+            logger.info("Cleaned up %d expired files.", len(expired_files))
+
     except Exception as exc:
         db.rollback()
-        logger.exception("Failed to clean up expired sessions: %s", exc)
+        logger.exception("Failed to clean up expired files: %s", exc)
     finally:
         db.close()

@@ -205,7 +205,7 @@ La réalisation de la plateforme ClarIA a été organisée selon une méthodolog
 | **S1** | Semaine 1 | Cahier des charges, étude de l'existant, choix technologiques, environnement de travail |
 | **S2** | Semaine 2 | Conception UML (cas d'utilisation, classes, séquence, activité), modélisation MCD/MLD |
 | **S3** | Semaine 3 | Développement backend : FastAPI, SQLAlchemy, Keycloak, intégration du pipeline IA |
-| **S4** | Semaine 4 | Développement frontend (React), tests automatisés (44 tests), correction des bugs |
+| **S4** | Semaine 4 | Développement frontend (React), tests automatisés (40 tests), correction des bugs |
 | **S5-S8**| Semaines 5–8 | Rédaction du rapport PFA, documentation technique, préparation de la soutenance |
 
 > [Figure 3 : Diagramme de Gantt du projet ClarIA — À insérer ici]
@@ -215,4 +215,4 @@ La réalisation de la plateforme ClarIA a été organisée selon une méthodolog
 
 **Conclusion du chapitre**
 
-Ce deuxième chapitre a permis de présenter formellement le projet ClarIA dans toute sa dimension technique et fonctionnelle. La reformulation de la problématique a mis en évidence les quatre défis fondamentaux que la solution doit relever : l'interprétation sémantique libre, l'adaptation dynamique aux données, la robustesse aux imperfections des fichiers, et la confidentialité by design. L'état de l'art technique a justifié le choix de PandasAI, d'Ollama et de LiteLLM comme technologies pivot, tandis que le cahier des charges a formalisé les 20 exigences fonctionnelles et les contraintes non fonctionnelles qui encadrent le développement. Le chapitre suivant abordera la phase d'analyse et de conception, en traduisant ces exigences en modélisations UML concrètes qui ont servi de plan directeur à l'ensemble du développement.
+Ce deuxième chapitre a permis de présenter formellement le projet ClarIA dans toute sa dimension technique et fonctionnelle. La reformulation de la problématique a mis en évidence les quatre défis fondamentaux que la solution doit relever : l'interprétation sémantique libre, l'adaptation dynamique aux données, la robustesse aux imperfections des fichiers, et la confidentialité by design. L'état de l'art technique a justifié le choix de PandasAI, d'Ollama et de LiteLLM comme technologies pivot, tandis que le cahier des charges a formalisé les 22 exigences fonctionnelles et les contraintes non fonctionnelles qui encadrent le développement. Le chapitre suivant abordera la phase d'analyse et de conception, en traduisant ces exigences en modélisations UML concrètes qui ont servi de plan directeur à l'ensemble du développement.

@@ -1,12 +1,16 @@
 /**
  * ProviderStatusBadge.tsx — Shows the active LLM provider and its status.
  *
- * Polls GET /api/v1/provider-status once on mount.
- * Displays a colored dot: green=online/configured, amber=offline+fallback, red=offline.
+ * Reads from the shared providerStore (polled every 30 s from App.tsx).
+ * No per-component interval — single source of truth for the whole app.
+ *
+ * Dot colors:
+ *   green  = Ollama online, or cloud provider configured
+ *   amber  = Ollama offline but fallback available
+ *   red    = Ollama offline, no fallback (user is blocked) — pulses
  */
-import React, { useEffect, useState } from 'react'
-import { getProviderStatus } from '../api/client'
-import type { ProviderStatus } from '../api/client'
+import React from 'react'
+import { useProviderStore } from '../store/providerStore'
 import { getLLMConfig } from './SettingsPanel'
 
 const LABELS: Record<string, string> = {
@@ -17,54 +21,47 @@ const LABELS: Record<string, string> = {
 }
 
 export function ProviderStatusBadge() {
-  const [ps, setPs] = useState<ProviderStatus | null>(null)
-  const [localCfg, setLocalCfg] = useState(() => getLLMConfig())
-
-  useEffect(() => {
-    let cancelled = false
-    getProviderStatus().then((d) => { if (!cancelled) setPs(d) }).catch(() => {})
-    return () => { cancelled = true }
-  }, [])
-
-  useEffect(() => {
-    const onChange = () => setLocalCfg(getLLMConfig())
-    window.addEventListener('llm-config-changed', onChange)
-    return () => window.removeEventListener('llm-config-changed', onChange)
-  }, [])
+  const { ps, isOllamaOffline } = useProviderStore()
 
   if (!ps) return null
 
-  const activeProvider = localCfg.provider || ps.provider
-
-  // Determine dot color based on active provider
+  const activeProvider = getLLMConfig().provider || ps.provider
   const isLocal   = activeProvider === 'local'
-  const isGood    = !isLocal || (ps.status === 'online' || ps.status === 'configured')
-  const isWarning = isLocal && ps.status === 'offline' && !!ps.fallback
-  const isError   = isLocal && ps.status === 'offline' && !ps.fallback
+  const isWarning = isLocal && isOllamaOffline && !!ps.fallback
+  const isError   = isLocal && isOllamaOffline && !ps.fallback
 
   const dotClass = isError
     ? 'provider-dot provider-dot--red'
     : isWarning
       ? 'provider-dot provider-dot--amber'
-      : `provider-dot provider-dot--${activeProvider}`
+      : isLocal
+        ? 'provider-dot provider-dot--local-online'   // green when Ollama is confirmed online
+        : `provider-dot provider-dot--${activeProvider}`
 
-  const label   = LABELS[activeProvider] ?? activeProvider
-  const tooltip = isWarning
-    ? `${label} hors ligne — bascule vers ${ps.fallback}`
-    : isError
-      ? `${label} hors ligne`
-      : `${label} · ${isLocal ? ps.model : localCfg.model}`
+  const label = LABELS[activeProvider] ?? activeProvider
+
+  let tooltip: string
+  if (isError) {
+    tooltip = `${label} hors ligne — les requêtes ne peuvent pas être traitées`
+  } else if (isWarning) {
+    tooltip = `${label} hors ligne — bascule vers ${ps.fallback}`
+  } else if (isLocal) {
+    tooltip = `${label} · ${ps.model}`
+  } else {
+    tooltip = `${label} · ${getLLMConfig().model}`
+  }
 
   return (
     <div
       id="provider-status-badge"
-      className="provider-badge"
+      className={`provider-badge${isError ? ' provider-badge--error' : ''}`}
       title={tooltip}
       aria-label={`Modèle IA : ${tooltip}`}
     >
       <span className={dotClass} aria-hidden="true" />
       <span className="provider-badge__label">
-        {isWarning ? `${label} → Gemini` : label}
+        {isError   ? `${label} · Hors ligne` :
+         isWarning ? `${label} → Gemini`     : label}
       </span>
     </div>
   )

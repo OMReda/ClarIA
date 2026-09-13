@@ -34,12 +34,21 @@ export interface DashboardGraph extends DashboardBase {
   layout: { x: number; y: number; w: number; h: number }
 }
 
+export type KPIFilterOperator = 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'contains'
+
+export interface KPIFilter {
+  column: string
+  operator: KPIFilterOperator
+  value: string
+}
+
 export interface DashboardKPI extends DashboardBase {
   type: 'kpi'
   column: string
   aggregation: 'sum' | 'avg' | 'count' | 'min' | 'max'
   label: string
   format?: 'number' | 'currency' | 'percent'
+  filters?: KPIFilter[]
 }
 
 export type DashboardChart = DashboardGraph | DashboardKPI
@@ -61,6 +70,7 @@ export interface AppState {
   errorMessage: string | null
 
   dashboardCharts: DashboardChart[]
+  isDashboardLoading: boolean
 
   toasts: Toast[]
 
@@ -98,6 +108,18 @@ export interface AppState {
   reorderKPIs: (oldIndex: number, newIndex: number) => void
 }
 
+function formatErrorMsg(msg: any): string | null {
+  if (msg === null || msg === undefined) return null;
+  if (typeof msg === 'string') return msg;
+  if (Array.isArray(msg)) {
+    return msg.map((m: any) => m?.msg || m?.message || JSON.stringify(m)).join(', ');
+  }
+  if (typeof msg === 'object') {
+    return (msg as any).msg || (msg as any).message || JSON.stringify(msg);
+  }
+  return String(msg);
+}
+
 export const useStore = create<AppState>((set, get) => ({
   isHydrating: true,
   status: 'idle',
@@ -113,22 +135,31 @@ export const useStore = create<AppState>((set, get) => ({
   clarificationQuestion: null,
   errorMessage: null,
   dashboardCharts: [],
+  isDashboardLoading: false,
   toasts: [],
   activeWs: null,
   config: null,
   lastPromptText: null,
 
   loadDashboardConfig: async () => {
+    // Capture fileId at call time — if the user switches datasets while the
+    // async fetch is in-flight, we must NOT overwrite state with stale data.
     const fileId = get().fileId
     if (!fileId) return
+    set({ isDashboardLoading: true })
     try {
       const { getDashboardConfig } = await import('../api/client')
       const config = await getDashboardConfig(fileId)
+
+      // Guard: if the user switched to a different file while we were fetching,
+      // discard this response entirely to avoid corrupting the new file's state.
+      if (get().fileId !== fileId) return
+
       if (config && Array.isArray(config.charts)) {
         let charts = [...config.charts];
 
         // Auto-fix old naive vertical stacks once on load so they pack into 2 columns
-        const isNaiveStack = charts.length > 0 && charts.every((c: any) => c.layout.w === 6 || c.layout.w === 8);
+        const isNaiveStack = charts.length > 0 && charts.every((c: any) => c.layout && (c.layout.w === 6 || c.layout.w === 8));
         if (isNaiveStack) {
           charts = charts.map((c: any, index: number) => ({
             ...c,
@@ -142,6 +173,11 @@ export const useStore = create<AppState>((set, get) => ({
       }
     } catch {
       // ignore
+    } finally {
+      // Only clear the loading flag if this response is still for the active file
+      if (get().fileId === fileId) {
+        set({ isDashboardLoading: false })
+      }
     }
   },
 
@@ -195,11 +231,12 @@ export const useStore = create<AppState>((set, get) => ({
 
     const currentCharts = get().dashboardCharts
     
-    // Prevent duplicate KPIs
+    // Prevent duplicate KPIs — same column, aggregation AND same filters = duplicate
     const isDuplicate = currentCharts.some(c => 
       (c.type ?? 'chart') === 'kpi' && 
       (c as DashboardKPI).column === kpiConfig.column && 
-      (c as DashboardKPI).aggregation === kpiConfig.aggregation
+      (c as DashboardKPI).aggregation === kpiConfig.aggregation &&
+      JSON.stringify((c as DashboardKPI).filters ?? []) === JSON.stringify(kpiConfig.filters ?? [])
     )
     
     if (isDuplicate) {
@@ -409,7 +446,7 @@ export const useStore = create<AppState>((set, get) => ({
   setPromptId: (id) => set({ currentPromptId: id }),
   setChart: (c, explanation) => set({ chart: c, explanation: explanation ?? null, status: 'completed' }),
   setClarification: (q) => set({ clarificationQuestion: q, status: 'awaiting_clarification' }),
-  setError: (msg) => set({ errorMessage: msg, status: 'error' }),
+  setError: (msg) => set({ errorMessage: formatErrorMsg(msg), status: 'error' }),
   setLastPromptText: (text) => set({ lastPromptText: text }),
 
   setActiveWs: (ws) => {
@@ -462,8 +499,9 @@ export const useStore = create<AppState>((set, get) => ({
 
   // Toast lifecycle is owned by <Toast> component (5 s timer) — store just holds the list
   addToast: (severity, message) => {
+    const formatted = formatErrorMsg(message) || 'Erreur';
     const id = generateUUID()
-    set((s) => ({ toasts: [...s.toasts, { id, severity, message }] }))
+    set((s) => ({ toasts: [{ id, severity, message: formatted }, ...s.toasts].slice(0, 2) }))
   },
   dismissToast: (id) =>
     set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),

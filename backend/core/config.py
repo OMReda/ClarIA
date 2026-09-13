@@ -51,7 +51,7 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     anthropic_api_key: str = ""
     google_api_key: str = ""            # Gemini API key — used as Ollama fallback
-    llm_timeout_seconds: int = 60
+    llm_timeout_seconds: int = 300
 
     # ── Fuzzy matching ───────────────────────────────────────────────────────
     fuzzy_high_threshold: int = 80
@@ -68,6 +68,8 @@ class Settings(BaseSettings):
     keycloak_server_url: str = "http://localhost:8080"
     keycloak_realm: str = "claria"
     keycloak_client_id: str = "claria-frontend"
+    keycloak_admin_client_id: str = "claria-admin"
+    keycloak_admin_client_secret: str = ""
 
     @property
     def max_file_size_bytes(self) -> int:

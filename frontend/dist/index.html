@@ -17,12 +17,46 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap"
     />
-    <script type="module" crossorigin src="/assets/index-CFHWM5Jx.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/vendor-Pp9cwX-E.js">
+    <style>
+      html {
+        scroll-behavior: smooth;
+        -webkit-text-size-adjust: 100%;
+        scrollbar-gutter: stable;
+        overflow-y: scroll;
+      }
+      html, body, #root {
+        background-color: #f1f5f9 !important;
+        color: #0f172a;
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+      .boot-spinner {
+        width: 32px;
+        height: 32px;
+        border: 3px solid #e2e8f0;
+        border-top-color: #2563eb;
+        border-radius: 50%;
+        animation: boot-spin 0.7s linear infinite;
+      }
+      @keyframes boot-spin {
+        to { transform: rotate(360deg); }
+      }
+    </style>
+    <script type="module" crossorigin src="/assets/index-e-4jkkFI.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/vendor-DkcvSUHc.js">
     <link rel="stylesheet" crossorigin href="/assets/vendor-DULRuONn.css">
-    <link rel="stylesheet" crossorigin href="/assets/index-DoofbgHG.css">
+    <link rel="stylesheet" crossorigin href="/assets/index-BTIIM4Qj.css">
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div style="display: flex; flex-direction: column; gap: 16px; height: 100vh; width: 100%; align-items: center; justify-content: center; background-color: #f1f5f9; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;">
+        <div class="boot-spinner"></div>
+        <div style="font-size: 14px; font-weight: 500; color: #64748b; line-height: 1.6; letter-spacing: 0px; text-align: center;">Chargement de l'espace ClarIA...</div>
+      </div>
+    </div>
   </body>
 </html>

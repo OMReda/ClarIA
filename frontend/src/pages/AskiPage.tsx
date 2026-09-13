@@ -43,7 +43,10 @@ export function AskiPage() {
     )
   }
 
-  const showChart   = status === 'completed' || status === 'processing'
+  // Show the chart panel when:
+  // - A request is in-flight (processing / prompting) so the loading spinner card is visible
+  // - A chart is available in completed or previewing states
+  const showChart   = status === 'processing' || status === 'prompting' || (!!chart && (status === 'completed' || status === 'previewing'))
   const showClarify = status === 'awaiting_clarification'
 
   return (

@@ -96,12 +96,12 @@ start "Frontend Vite" cmd /k "cd /d %~dp0\frontend && color 0B && npm run dev"
 timeout /t 4 /nobreak >nul
 
 :: ── 9. Open browser ───────────────────────────────────────────────────────────
-echo  [OK] Opening browser at http://localhost:5173
-start "" "http://localhost:5173"
+echo  [OK] Opening browser at https://localhost:5173
+start "" "https://localhost:5173"
 
 echo.
 echo  -------------------------------------------------------------------
-echo   Frontend  :  http://localhost:5173
+echo   Frontend  :  https://localhost:5173
 echo   Backend   :  http://localhost:8000
 echo   API docs  :  http://localhost:8000/api/docs
 echo  -------------------------------------------------------------------

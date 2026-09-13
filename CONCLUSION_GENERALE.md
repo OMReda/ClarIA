@@ -40,7 +40,7 @@ Au terme du développement, la confrontation des réalisations avec le cahier de
 | Confidentialité : exécution locale Ollama `qwen2.5-coder:7b` | ✅ |
 | Fallback multi-fournisseurs LLM (Google, OpenAI, Anthropic via LiteLLM) | ✅ |
 | Déploiement Docker Compose reproductible (8 services) | ✅ |
-| Tests automatisés (44 tests Pytest, 100%) | ✅ |
+| Tests automatisés (40 tests Pytest, 100%) | ✅ |
 
 ---
 
@@ -50,7 +50,7 @@ Ce stage au sein de SKATYS a représenté une expérience formatrice à plusieur
 
 La gestion de la contrainte Python 3.10–3.11 imposée par PandasAI 3.0.0 (détectée dès `main.py` pour un signalement précoce), la résolution de la race condition du rate limiter Redis par un script Lua atomique (l'ancienne approche pipeline pouvait perdre l'EXPIRE en cas de coupure réseau post-INCR), la mise au point du mécanisme de validation d'issuer par suffixe dans `security.py` pour supporter Cloudflare/Ngrok sans hardcoder les hostnames, ou encore la détection duale d'intention (LLM pour le cloud, mots-clés pour Ollama local pour éviter la double latence) — autant de problèmes techniques non triviaux qui m'ont conduit à lire de la documentation de bas niveau, à déboguer des comportements concurrents, et à concevoir des solutions robustes et testées.
 
-Sur le plan professionnel, ce projet m'a initié aux pratiques de l'ingénierie logicielle en entreprise au sein d'un cabinet de conseil de haut niveau : la rédaction d'un cahier des charges, la modélisation UML, la gestion des versions par branches, et la documentation technique. Il m'a également appris à prioriser les fonctionnalités dans un délai contraint, à accepter les imperfections d'une première version, et à documenter les limitations identifiées pour les équipes futures.
+Sur le plan professionnel, ce projet m'a initié aux pratiques de l'ingénierie logicielle en entreprise au sein d'une entreprise de conseil de haut niveau : la rédaction d'un cahier des charges, la modélisation UML, la gestion des versions par branches, et la documentation technique. Il m'a également appris à prioriser les fonctionnalités dans un délai contraint, à accepter les imperfections d'une première version, et à documenter les limitations identifiées pour les équipes futures.
 
 ---
 
@@ -78,7 +78,7 @@ Malgré la complétude fonctionnelle de la plateforme, plusieurs limitations ont
 
 Les travaux réalisés posent des fondations solides sur lesquelles plusieurs évolutions peuvent être envisagées :
 
-**Court terme (v1.1) :**
+**Court terme (Évolutions Fonctionnelles) :**
 - Retry intelligent avec reformulation du prompt en cas de `NoResultFoundError`
 - Support des comparaisons multi-termes (> 2 groupes) dans `_is_comparison_prompt()`
 - Ajout du type *treemap* pour les données hiérarchiques
@@ -86,7 +86,7 @@ Les travaux réalisés posent des fondations solides sur lesquelles plusieurs é
 - Détection automatique des séries temporelles avec zoom natif ECharts
 - **Support d'autres serveurs d'inférence locale** : vLLM, LocalAI ou llama.cpp server pour les organisations disposant d'infrastructures GPU dédiées — l'architecture LiteLLM rend cette évolution réalisable sans refonte majeure du code.
 
-**Moyen terme (v2.0) :**
+**Moyen terme (ClarIA Entreprise) :**
 
 - **Connexion aux bases de données décisionnelles** : Permettre une connexion directe aux bases relationnelles (PostgreSQL, MySQL), aux entrepôts de données (BigQuery, Snowflake, Azure Synapse) et, dans le contexte de SKATYS, aux exports SAP Analytics Cloud — sans étape d'export/import manuel.
 
@@ -102,9 +102,9 @@ Les travaux réalisés posent des fondations solides sur lesquelles plusieurs é
 
 - **Mode Hybride Graphique ↔ Chat** : Enrichir le classificateur d'intention d'une dimension *"graphique ou texte ?"* pour transformer ClarIA en assistant analytique conversationnel complet.
 
-**Long terme :**
+**Long terme (Vision Finale) :**
 
-- **ClarIA Enterprise** : Interface universelle en langage naturel pour toute source de données — BigQuery, Snowflake, Kafka, Metabase/Superset via API.
+- **ClarIA Entreprise** : Interface universelle en langage naturel pour toute source de données — BigQuery, Snowflake, Kafka, Metabase/Superset via API.
 - **Interface vocale** : Intégration Whisper (disponible via Ollama en local).
 - **Observabilité LLM** : Métriques Prometheus/Grafana (taux de succès PandasAI, scores fuzzy, temps d'inférence).
 - **Agent IA autonome** : RAG + mémoire conversationnelle + data warehouse = agent analytique planifiant et exécutant une série d'analyses à partir d'un objectif en une phrase.
@@ -113,7 +113,7 @@ Les travaux réalisés posent des fondations solides sur lesquelles plusieurs é
 
 ## Mot de conclusion
 
-La démocratisation de l'analyse de données est un enjeu organisationnel et sociétal majeur. Dans un monde où la donnée est omniprésente — notamment dans les systèmes ERP SAP qu'exploitent les clients de SKATYS — mais où les compétences pour l'exploiter restent rares et coûteuses, les interfaces en langage naturel représentent une rupture technologique dont l'impact potentiel est considérable. ClarIA est une première réponse concrète à cet enjeu : une réponse **technique rigoureuse** (architecture full-stack de production, pipeline IA asynchrone en 8 étapes, sécurité JWT RS256 éprouvée), une réponse **fonctionnelle complète** (20 exigences fonctionnelles toutes satisfaites, 44 tests passés à 100%), et une réponse **éthique** — celle d'une plateforme conçue pour que les données restent sous le contrôle de ceux qui les produisent, hébergées localement via Ollama, traitées confidentiellement, sans dépendance à un fournisseur cloud externe.
+La démocratisation de l'analyse de données est un enjeu organisationnel et sociétal majeur. Dans un monde où la donnée est omniprésente — notamment dans les systèmes ERP SAP qu'exploitent les clients de SKATYS — mais où les compétences pour l'exploiter restent rares et coûteuses, les interfaces en langage naturel représentent une rupture technologique dont l'impact potentiel est considérable. ClarIA est une première réponse concrète à cet enjeu : une réponse **technique rigoureuse** (architecture full-stack de production, pipeline IA asynchrone en 8 étapes, sécurité JWT RS256 éprouvée), une réponse **fonctionnelle complète** (22 exigences fonctionnelles toutes satisfaites, 40 tests passés à 100%), et une réponse **éthique** — celle d'une plateforme conçue pour que les données restent sous le contrôle de ceux qui les produisent, hébergées localement via Ollama, traitées confidentiellement, sans dépendance à un fournisseur cloud externe.
 
 Le contexte dans lequel ce projet a été réalisé — un mois de stage intensif au sein de **SKATYS**, SAP Gold Partner reconnu, encadré par **Mme. BERRI Malak** — a imposé des contraintes de délai réelles qui ont elles-mêmes été une source d'apprentissage. Prioriser les fonctionnalités, accepter une première version imparfaite, documenter rigoureusement les anomalies et les limitations pour les équipes futures : autant de réflexes professionnels que ce projet a contribué à forger.
 

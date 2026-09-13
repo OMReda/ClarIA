@@ -30,8 +30,7 @@ celery_app.conf.update(
     task_acks_late=True,
     worker_prefetch_multiplier=1,
     # Hard timeout: task killed after this many seconds
-    task_time_limit=180,
+    task_time_limit=300,
     # Soft timeout: SoftTimeLimitExceeded raised, allows graceful cleanup
-    task_soft_time_limit=150,
+    task_soft_time_limit=280,
 )
-

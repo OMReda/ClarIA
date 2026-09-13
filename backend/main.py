@@ -27,6 +27,7 @@ from backend.api.files import router as files_router
 from backend.api.prompts import router as prompts_router
 from backend.api.provider import router as provider_router
 from backend.api.websocket import router as ws_router
+from backend.api import admin
 from backend.core.config import get_settings
 
 logging.basicConfig(
@@ -42,18 +43,7 @@ logging.getLogger("pandasai").setLevel(logging.ERROR)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Auto-create SQLite tables in local dev (SQLite URL = no Alembic needed)."""
-    db_url = settings.database_url
-    if "sqlite" in db_url:
-        from backend.core.database import async_engine, Base
-        # Import all models so their tables are registered on Base.metadata
-        
-        import backend.models.file     # noqa: F401
-        import backend.models.prompt   # noqa: F401
-        import backend.models.chart    # noqa: F401
-        async with async_engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-        logger.info("SQLite tables created (dev mode).")
+    """Lifespan events."""
     yield
 
 app = FastAPI(
@@ -79,6 +69,8 @@ app.include_router(files_router)
 app.include_router(prompts_router)
 app.include_router(provider_router)
 app.include_router(ws_router)
+
+app.include_router(admin.router, prefix="/api/v1/platform-users", tags=["admin"])
 
 
 # ── Global error handler — never expose raw stack traces ──────────────────────

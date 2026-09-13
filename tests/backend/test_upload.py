@@ -27,12 +27,11 @@ from tests.backend.conftest import (
 
 
 @pytest.mark.asyncio
-async def test_s1_valid_csv_upload(client: AsyncClient, session_id: str):
+async def test_s1_valid_csv_upload(client: AsyncClient):
     """Scenario 1: Valid UTF-8 CSV → 201 with columns and preview."""
     csv_bytes = make_csv(SAMPLE_ROWS)
     resp = await client.post(
         "/api/v1/files",
-        headers={"X-Session-ID": session_id},
         files={"file": ("ventes.csv", csv_bytes, "text/csv")},
     )
     assert resp.status_code == 201, resp.text
@@ -48,12 +47,11 @@ async def test_s1_valid_csv_upload(client: AsyncClient, session_id: str):
 
 
 @pytest.mark.asyncio
-async def test_s2_file_too_large(client: AsyncClient, session_id: str):
+async def test_s2_file_too_large(client: AsyncClient):
     """Scenario 2: File exceeds 10MB → 400 FILE_TOO_LARGE."""
     big_bytes = make_csv_too_large(mb=11)
     resp = await client.post(
         "/api/v1/files",
-        headers={"X-Session-ID": session_id},
         files={"file": ("huge.csv", big_bytes, "text/csv")},
     )
     assert resp.status_code == 400
@@ -62,11 +60,10 @@ async def test_s2_file_too_large(client: AsyncClient, session_id: str):
 
 
 @pytest.mark.asyncio
-async def test_s3_wrong_file_type(client: AsyncClient, session_id: str):
+async def test_s3_wrong_file_type(client: AsyncClient):
     """Scenario 3: PNG uploaded → 400 INVALID_FILE_TYPE."""
     resp = await client.post(
         "/api/v1/files",
-        headers={"X-Session-ID": session_id},
         files={"file": ("image.png", make_png_bytes(), "image/png")},
     )
     assert resp.status_code == 400
@@ -75,12 +72,11 @@ async def test_s3_wrong_file_type(client: AsyncClient, session_id: str):
 
 
 @pytest.mark.asyncio
-async def test_s4_french_locale_normalisation(client: AsyncClient, session_id: str):
+async def test_s4_french_locale_normalisation(client: AsyncClient):
     """Scenario 4: French numbers (1 234,56) and dates (dd/mm/yyyy) are normalised."""
     csv_bytes = make_csv_french_numbers()
     resp = await client.post(
         "/api/v1/files",
-        headers={"X-Session-ID": session_id},
         files={"file": ("fr_ventes.csv", csv_bytes, "text/csv")},
     )
     assert resp.status_code == 201, resp.text
@@ -96,12 +92,11 @@ async def test_s4_french_locale_normalisation(client: AsyncClient, session_id: s
 
 
 @pytest.mark.asyncio
-async def test_s5_latin1_encoding(client: AsyncClient, session_id: str):
+async def test_s5_latin1_encoding(client: AsyncClient):
     """Scenario 5: Latin-1 encoded CSV is detected and parsed without error."""
     csv_bytes = make_csv_latin1()
     resp = await client.post(
         "/api/v1/files",
-        headers={"X-Session-ID": session_id},
         files={"file": ("latin1.csv", csv_bytes, "text/csv")},
     )
     assert resp.status_code == 201, resp.text
@@ -115,7 +110,7 @@ async def test_s5_latin1_encoding(client: AsyncClient, session_id: str):
 
 
 @pytest.mark.asyncio
-async def test_s6_multisheet_excel(client: AsyncClient, session_id: str):
+async def test_s6_multisheet_excel(client: AsyncClient):
     """Scenario 6: Multi-sheet Excel → needs_sheet_selection with sheet list."""
     xlsx_bytes = make_excel_bytes({
         "Ventes 2023": SAMPLE_ROWS,
@@ -123,7 +118,6 @@ async def test_s6_multisheet_excel(client: AsyncClient, session_id: str):
     })
     resp = await client.post(
         "/api/v1/files",
-        headers={"X-Session-ID": session_id},
         files={"file": ("rapport.xlsx", xlsx_bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
     )
     assert resp.status_code == 201, resp.text
@@ -134,7 +128,7 @@ async def test_s6_multisheet_excel(client: AsyncClient, session_id: str):
 
 
 @pytest.mark.asyncio
-async def test_s7_sheet_selection(client: AsyncClient, session_id: str):
+async def test_s7_sheet_selection(client: AsyncClient):
     """Scenario 7: After multi-sheet upload, selecting a sheet returns full preview."""
     xlsx_bytes = make_excel_bytes({
         "Ventes 2023": SAMPLE_ROWS,
@@ -143,7 +137,6 @@ async def test_s7_sheet_selection(client: AsyncClient, session_id: str):
     # Upload
     upload_resp = await client.post(
         "/api/v1/files",
-        headers={"X-Session-ID": session_id},
         files={"file": ("rapport.xlsx", xlsx_bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
     )
     file_id = upload_resp.json()["file_id"]
@@ -151,7 +144,6 @@ async def test_s7_sheet_selection(client: AsyncClient, session_id: str):
     # Select sheet
     select_resp = await client.post(
         f"/api/v1/files/{file_id}/sheet",
-        headers={"X-Session-ID": session_id},
         json={"sheet_name": "Ventes 2023"},
     )
     assert select_resp.status_code == 200, select_resp.text
@@ -168,18 +160,16 @@ async def test_session_auto_created(client: AsyncClient):
     csv_bytes = make_csv(SAMPLE_ROWS)
     resp = await client.post(
         "/api/v1/files",
-        headers={"X-Session-ID": new_session},
         files={"file": ("test.csv", csv_bytes, "text/csv")},
     )
     assert resp.status_code == 201
 
 
 @pytest.mark.asyncio
-async def test_empty_file_rejected(client: AsyncClient, session_id: str):
+async def test_empty_file_rejected(client: AsyncClient):
     """Empty file bytes → rejected."""
     resp = await client.post(
         "/api/v1/files",
-        headers={"X-Session-ID": session_id},
         files={"file": ("empty.csv", b"", "text/csv")},
     )
     assert resp.status_code == 400

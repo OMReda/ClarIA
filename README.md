@@ -157,7 +157,7 @@ All settings are in `.env`. Key options:
 - The Celery worker mounts `/var/run/docker.sock` for `DockerSandbox`. In
   production, use a dedicated Docker daemon (Sysbox or rootless Docker) to
   reduce blast radius.
-- Sessions are anonymous UUIDs (no authentication in V1). All file/prompt
+- Sessions are anonymous UUIDs (no authentication in the Standard version). All file/prompt
   access is gated by session ownership checks.
 
 ## Supported chart types
