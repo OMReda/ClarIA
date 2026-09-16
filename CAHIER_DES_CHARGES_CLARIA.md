@@ -261,7 +261,7 @@ Au lieu d'importer un fichier CSV/Excel, l'utilisateur pourra connecter ClarIA d
 | S3 | S5 – S6 | Développement backend : FastAPI, modèles, migrations Alembic, Keycloak |
 | S4 | S6 – S7 | Développement pipeline IA : PandasAI, fuzzy_matcher, chart_resolver, Celery |
 | S5 | S7 – S8 | Développement frontend : pages React, WebSocket, ECharts, Dashboard, KPI |
-| S6 | S8 – S9 | Tests automatisés (40 tests), correction des bugs, validation end-to-end |
+| S6 | S8 – S9 | Tests automatisés (44 tests), correction des bugs, validation end-to-end |
 | S7 | S9 – S10 | Conteneurisation Docker, documentation technique, rapport final, soutenance |
 
 ### 8.2 Livrables
@@ -274,7 +274,7 @@ Au lieu d'importer un fichier CSV/Excel, l'utilisateur pourra connecter ClarIA d
 | API REST + WebSocket | ✅ | Endpoints fichiers, prompts, dashboard, admin, provider |
 | Tableau de bord interactif | ✅ | DashboardView + KPICard + react-grid-layout |
 | Sécurité complète | ✅ | Keycloak 26 + JWT RS256 + RBAC + rate limiting Redis |
-| Suite de tests | ✅ | 40 tests automatisés — 100% de réussite |
+| Suite de tests | ✅ | 44 tests automatisés — 100% de réussite |
 | Documentation technique | ✅ | Production Readiness Report + Deep Dive Report |
 | Rapport final (PFA) | 🔄 | CHAPITRE_0 (Introduction) + Chapitres 1 à 5 + Conclusion |
 | Présentation PPTX | 🔜 | Diaporama de soutenance |

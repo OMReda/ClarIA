@@ -463,7 +463,7 @@ Le diagramme de Gantt ci-dessous retrace le planning de développement du projet
 | **Phase 1** | CDC, état de l'art, analyse besoins SKATYS | ████ | | | | |
 | **Phase 2** | Architecture système, UML, modélisation BDD | ░███ | ████ | | | |
 | **Phase 3** | FastAPI + Keycloak, Pipeline IA, Celery + Redis | | ░███ | ████ | | |
-| **Phase 4** | Interface React, tests Pytest (40 tests), bug fixes | | | ░███ | ████ | |
+| **Phase 4** | Interface React, tests Pytest (44 tests), bug fixes | | | ░███ | ████ | |
 | **Phase 5** | Rédaction du Rapport PFA & Documentation | | | | ░░██ | ████ |
 
 *Légende : ████ = Phase active. ░ = Transition / chevauchement. S = Semaine.*
@@ -477,7 +477,7 @@ Le diagramme de Gantt ci-dessous retrace le planning de développement du projet
 
 - **Phase 3 — Développement Backend & IA (S3, 13–26 juil.)** : Implémentation du backend FastAPI (SQLAlchemy, 4 migrations Alembic, Keycloak JWT RS256, RBAC, rate limiter Redis Lua atomique). Intégration du pipeline IA : PandasAI, LiteLLM, fuzzy matcher, chart_resolver (8 types), DockerSandbox, WebSocket Pub/Sub.
 
-- **Phase 4 — Frontend & Tests (S4, 20–31 juil.)** : Construction du frontend React 18 (UploadZone, AskiPage, Dashboard react-grid-layout, panneau Admin, keycloak-js). Campagne de tests (40 tests Pytest, 100%), correction des bugs critiques (NoResultFoundError, race condition Redis, spinner infini).
+- **Phase 4 — Frontend & Tests (S4, 20–31 juil.)** : Construction du frontend React 18 (UploadZone, AskiPage, Dashboard react-grid-layout, panneau Admin, keycloak-js). Campagne de tests (44 tests Pytest, 100%), correction des bugs critiques (NoResultFoundError, race condition Redis, spinner infini).
 
 - **Phase 5 — Rédaction du Rapport (S4–S8, 25 juil. – fin août)** : Rédaction de la documentation technique, consolidation des chapitres 0 à 5, génération des diagrammes PlantUML.
 

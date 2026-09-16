@@ -1,13 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useStore } from '../store'
 import type { Toast, ToastSeverity } from '../store'
-import { IconCheck, IconX, IconWarning, IconInfo } from './Icon'
+import { IconCheck, IconX, IconWarning, IconInfo, IconTrash, IconEdit } from './Icon'
 
 const ICONS: Record<ToastSeverity, React.ReactNode> = {
   success: <IconCheck size={14} strokeWidth={2.5} />,
   error:   <IconX    size={14} strokeWidth={2.25} />,
   warning: <IconWarning size={14} strokeWidth={2} />,
   info:    <IconInfo size={14} strokeWidth={2} />,
+  deleted: <IconTrash size={14} strokeWidth={2} />,
+  modified: <IconEdit size={14} strokeWidth={2} />,
 }
 
 const TITLES: Record<ToastSeverity, string> = {
@@ -15,6 +17,8 @@ const TITLES: Record<ToastSeverity, string> = {
   error:   'Erreur',
   warning: 'Attention',
   info:    'Information',
+  deleted: 'Suppression',
+  modified: 'Modification',
 }
 
 function ToastItem({ item, onClose }: { item: Toast; onClose: (id: string) => void }) {

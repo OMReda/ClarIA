@@ -96,6 +96,17 @@ async def upload_file(
         check_file_size(len(raw_bytes))
     except FileValidationError as exc:
         raise _error(exc.code, exc.message, exc.details)
+        
+    # ── Check for duplicate filename ──────────────────────────────────────────
+    filename = file.filename or "upload"
+    stmt = select(FileModel).where(
+        FileModel.owner_id == user.sub,
+        FileModel.original_filename == filename,
+        FileModel.status != "error"
+    )
+    result = await db.execute(stmt)
+    if result.scalars().first():
+        raise _error("DUPLICATE_FILE", f"Un fichier nommé '{filename}' a déjà été importé.")
 
     if len(raw_bytes) == 0:
         raise _error("EMPTY_FILE", "The uploaded file is empty.")

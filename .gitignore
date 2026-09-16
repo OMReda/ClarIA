@@ -1,12 +1,72 @@
+# ── Secrets & Credentials ──────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+*.admin-credentials.local
 .admin-credentials.local
+token.json
+token2.json
+recover.txt
+
+# ── Keycloak runtime data ──────────────────────────────────────────────────────
 infra/keycloak/keycloak-*/
+infra/keycloak/data/
+
+# ── Databases ──────────────────────────────────────────────────────────────────
 dev.db
+test.db
+*.db
+*.sqlite
+
+# ── User uploaded files & exports ─────────────────────────────────────────────
 storage/
+exports/
+test_data/
+
+# ── Logs ──────────────────────────────────────────────────────────────────────
+*.log
+logs/
+celery.log
+error.log
+pandasai.log
+
+# ── Python ────────────────────────────────────────────────────────────────────
 __pycache__/
 *.pyc
-.env
+*.pyo
+*.pyd
+.Python
 .venv/
 venv/
+.pytest_cache/
+.mypy_cache/
+*.egg-info/
+dist/
+build/
 
+# ── Node / Frontend ───────────────────────────────────────────────────────────
 node_modules/
+frontend/dist/
+frontend/.vite/
+
+# ── Test artifacts ────────────────────────────────────────────────────────────
 _test_storage/
+scratch/
+temp_theme_extract/
+
+# ── Large archives / binaries ─────────────────────────────────────────────────
+*.7z
+*.zip
+*.tar.gz
+plateforme-restitution.7z
+
+# ── OS & editor junk ──────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/settings.json
+
+# ── Agents config (local only) ────────────────────────────────────────────────
+.agents/

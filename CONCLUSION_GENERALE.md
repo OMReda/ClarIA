@@ -26,21 +26,32 @@ Au terme du développement, la confrontation des réalisations avec le cahier de
 
 | Exigence initiale | Réalisé |
 | :--- | :---: |
-| Import CSV / Excel avec validation stricte | ✅ |
-| Normalisation automatique des formats français | ✅ |
+| Authentification sécurisée (Keycloak JWT RS256 + RBAC) | ✅ |
+| Import de fichiers (CSV / Excel avec validation stricte) | ✅ |
 | Sélection de feuille pour les fichiers Excel multi-onglets | ✅ |
+| Normalisation automatique des formats locaux | ✅ |
+| Prévisualisation des données (PreviewPanel) | ✅ |
 | Requête en langage naturel (français) | ✅ |
-| 8 types de graphiques ECharts (bar, line, pie, scatter, histogram, area, radar, heatmap) | ✅ |
+| Correspondance floue des colonnes (Fuzzy matching) | ✅ |
+| Classification de l'intention (Data vs Hors-sujet) | ✅ |
+| Détection du type de graphique (8 types ECharts) | ✅ |
+| Inférence LLM via PandasAI (Ollama local) | ✅ |
+| Basculement automatique LLM (Fallback cloud via LiteLLM) | ✅ |
+| Construction du graphique interactif (Apache ECharts) | ✅ |
+| Résultat en temps réel (WebSocket + Redis Pub/Sub) | ✅ |
 | Explication textuelle en français | ✅ |
+| Dialogue de clarification interactif | ✅ |
 | Tableau de bord personnalisable (drag-and-drop) | ✅ |
-| Indicateurs KPI dynamiques et graphiques manuels | ✅ |
-| Authentification Keycloak JWT RS256 + RBAC (user/admin) | ✅ |
-| Panneau d'administration complet | ✅ |
+| Persistance du tableau de bord | ✅ |
+| Indicateurs KPI dynamiques et agrégations | ✅ |
 | Rate limiting Redis 30 req/h (Lua atomique) | ✅ |
-| Confidentialité : exécution locale Ollama `qwen2.5-coder:7b` | ✅ |
-| Fallback multi-fournisseurs LLM (Google, OpenAI, Anthropic via LiteLLM) | ✅ |
-| Déploiement Docker Compose reproductible (8 services) | ✅ |
-| Tests automatisés (40 tests Pytest, 100%) | ✅ |
+| Panneau d'administration complet (CRUD) | ✅ |
+| Configuration LLM à chaud (SettingsPanel) | ✅ |
+| Nettoyage automatique des fichiers expirés | ✅ |
+
+| Suppression en cascade (Keycloak + DB + disque) | ✅ |
+| Dialogue de clarification interactif (`awaiting_clarification`) | ✅ |
+| Constructeur manuel de graphiques (côté client) | ✅ |
 
 ---
 
@@ -113,7 +124,7 @@ Les travaux réalisés posent des fondations solides sur lesquelles plusieurs é
 
 ## Mot de conclusion
 
-La démocratisation de l'analyse de données est un enjeu organisationnel et sociétal majeur. Dans un monde où la donnée est omniprésente — notamment dans les systèmes ERP SAP qu'exploitent les clients de SKATYS — mais où les compétences pour l'exploiter restent rares et coûteuses, les interfaces en langage naturel représentent une rupture technologique dont l'impact potentiel est considérable. ClarIA est une première réponse concrète à cet enjeu : une réponse **technique rigoureuse** (architecture full-stack de production, pipeline IA asynchrone en 8 étapes, sécurité JWT RS256 éprouvée), une réponse **fonctionnelle complète** (22 exigences fonctionnelles toutes satisfaites, 40 tests passés à 100%), et une réponse **éthique** — celle d'une plateforme conçue pour que les données restent sous le contrôle de ceux qui les produisent, hébergées localement via Ollama, traitées confidentiellement, sans dépendance à un fournisseur cloud externe.
+La démocratisation de l'analyse de données est un enjeu organisationnel et sociétal majeur. Dans un monde où la donnée est omniprésente — notamment dans les systèmes ERP SAP qu'exploitent les clients de SKATYS — mais où les compétences pour l'exploiter restent rares et coûteuses, les interfaces en langage naturel représentent une rupture technologique dont l'impact potentiel est considérable. ClarIA est une première réponse concrète à cet enjeu : une réponse **technique rigoureuse** (architecture full-stack de production, pipeline IA asynchrone en 8 étapes, sécurité JWT RS256 éprouvée), une réponse **fonctionnelle complète** (22 exigences fonctionnelles toutes satisfaites, 44 tests passés à 100%), et une réponse **éthique** — celle d'une plateforme conçue pour que les données restent sous le contrôle de ceux qui les produisent, hébergées localement via Ollama, traitées confidentiellement, sans dépendance à un fournisseur cloud externe.
 
 Le contexte dans lequel ce projet a été réalisé — un mois de stage intensif au sein de **SKATYS**, SAP Gold Partner reconnu, encadré par **Mme. BERRI Malak** — a imposé des contraintes de délai réelles qui ont elles-mêmes été une source d'apprentissage. Prioriser les fonctionnalités, accepter une première version imparfaite, documenter rigoureusement les anomalies et les limitations pour les équipes futures : autant de réflexes professionnels que ce projet a contribué à forger.
 

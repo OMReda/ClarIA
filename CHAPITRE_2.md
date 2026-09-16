@@ -150,6 +150,9 @@ Les fonctionnalités attendues du système sont les suivantes :
 - **F-18 :** Panneau d'administration : CRUD utilisateurs via Keycloak Admin API, suppression en cascade (base de données + disque).
 - **F-19 :** Configuration des fournisseurs LLM à chaud (sans redémarrage) depuis le panneau de paramètres.
 - **F-20 :** Nettoyage automatique des fichiers expirés (TTL 7 jours) via une tâche Celery planifiée.
+- **F-21 :** Dialogue de clarification interactif : lorsque la requête est ambiguë, le pipeline passe en état `awaiting_clarification` et pose une question de précision à l'utilisateur avant de reprendre le traitement.
+- **F-22 :** Constructeur manuel de graphiques : création de graphiques personnalisés directement depuis l'interface (sans LLM), avec agrégation côté client sur les 10 000 premières lignes du fichier actif.
+
 
 ### 2.5.3 Exigences Non Fonctionnelles
 
@@ -205,7 +208,7 @@ La réalisation de la plateforme ClarIA a été organisée selon une méthodolog
 | **S1** | Semaine 1 | Cahier des charges, étude de l'existant, choix technologiques, environnement de travail |
 | **S2** | Semaine 2 | Conception UML (cas d'utilisation, classes, séquence, activité), modélisation MCD/MLD |
 | **S3** | Semaine 3 | Développement backend : FastAPI, SQLAlchemy, Keycloak, intégration du pipeline IA |
-| **S4** | Semaine 4 | Développement frontend (React), tests automatisés (40 tests), correction des bugs |
+| **S4** | Semaine 4 | Développement frontend (React), tests automatisés (44 tests), correction des bugs |
 | **S5-S8**| Semaines 5–8 | Rédaction du rapport PFA, documentation technique, préparation de la soutenance |
 
 > [Figure 3 : Diagramme de Gantt du projet ClarIA — À insérer ici]

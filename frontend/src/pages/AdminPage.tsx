@@ -160,9 +160,9 @@ export function AdminPage() {
       })
       if (formData.password && formData.password.trim() !== '') {
         await setAdminUserPassword(showEdit, { password: formData.password })
-        addToast('success', 'Profil, statut et mot de passe mis à jour avec succès.')
+        addToast('modified', 'Profil, statut et mot de passe mis à jour avec succès.')
       } else {
-        addToast('success', 'Utilisateur mis à jour.')
+        addToast('modified', 'Utilisateur mis à jour.')
       }
       setShowEdit(null)
       fetchAdminUsers().then(setUsers).catch(() => { })
@@ -185,9 +185,9 @@ export function AdminPage() {
         enabled: targetStatus
       })
       if (targetStatus) {
-        addToast('success', 'Utilisateur activé avec succès.')
+        addToast('modified', 'Utilisateur activé avec succès.')
       } else {
-        addToast('warning', 'Utilisateur désactivé.')
+        addToast('modified', 'Utilisateur désactivé.')
       }
     } catch (err: any) {
       // Revert optimistic update on error
@@ -219,7 +219,7 @@ export function AdminPage() {
     if (!userToDelete) return
     try {
       await deleteAdminUser(userToDelete.id)
-      addToast('info', 'Utilisateur supprimé.')
+      addToast('deleted', 'Utilisateur supprimé.')
       setUserToDelete(null)
       setUsers(prev => prev.filter(x => x.id !== userToDelete.id))
       fetchAdminUsers().then(setUsers).catch(() => { })

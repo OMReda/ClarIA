@@ -551,27 +551,31 @@ Au cours de la phase de tests et de validation fonctionnelle, quatre anomalies s
 
 | Exigence Fonctionnelle | Statut |
 | :--- | :---: |
-| Import CSV/Excel avec validation | ✅ Livré |
-| Normalisation données françaises | ✅ Livré |
-| Requête en langage naturel | ✅ Livré |
-| 8 types de graphiques ECharts | ✅ Livré |
-| Explication textuelle en français | ✅ Livré |
-| Tableau de bord personnalisable | ✅ Livré |
-| Rate limiting (30 req/h) | ✅ Livré |
-| Authentification Keycloak SSO | ✅ Livré |
-| RBAC (user / admin) | ✅ Livré |
-| Administration utilisateurs (CRUD) | ✅ Livré |
-| Suppression en cascade (Keycloak + DB + disque) | ✅ Livré |
-| Support multi-fournisseurs LLM | ✅ Livré |
-| Fallback automatique (Ollama → cloud) | ✅ Livré |
-| Compatibilité Python 3.10–3.11 | ✅ Livré |
-| Déploiement Docker Compose | ✅ Livré |
-| WebSocket temps réel | ✅ Livré |
-| Comparaison multi-séries | ✅ Livré (après correction) |
-| KPI (agrégations dynamiques) | ✅ Livré |
+| F-01 : Authentification sécurisée (Keycloak 26, JWT RS256, RBAC) | ✅ Livré |
+| F-02 : Import de fichiers CSV / Excel (magic bytes, 10 Mo, 100 000 lignes) | ✅ Livré |
+| F-03 : Dialogue de sélection de feuille (classeurs Excel multi-feuilles) | ✅ Livré |
+| F-04 : Normalisation automatique des formats locaux français | ✅ Livré |
+| F-05 : Prévisualisation des données importées (colonnes, types, aperçu) | ✅ Livré |
+| F-06 : Interface conversationnelle Aski (requête en langage naturel) | ✅ Livré |
+| F-07 : Classification de l'intention LLM (Data vs Hors-sujet) | ✅ Livré |
+| F-08 : Correspondance floue des colonnes (rapidfuzz, seuils 80 % / 50 %) | ✅ Livré |
+| F-09 : Détection du type de graphique (8 types, mots-clés) | ✅ Livré |
+| F-10 : Inférence LLM via PandasAI (Ollama `qwen2.5-coder:7b` par défaut) | ✅ Livré |
+| F-11 : Basculement automatique entre fournisseurs LLM (LiteLLM) | ✅ Livré |
+| F-12 : Construction de la spécification Apache ECharts (`chart_resolver`) | ✅ Livré |
+| F-13 : Restitution en temps réel via WebSocket (Redis Pub/Sub) | ✅ Livré |
+| F-14 : Génération d'une explication textuelle en français (`generate_explanation`) | ✅ Livré |
+| F-15 : Tableau de bord personnalisable (glisser-déposer, persistance JSON) | ✅ Livré |
+| F-16 : Indicateurs KPI manuels (SUM, AVG, COUNT, MIN, MAX) | ✅ Livré |
+| F-17 : Limiteur de débit Redis — 30 req/h par utilisateur (script Lua atomique) | ✅ Livré |
+| F-18 : Panneau d'administration CRUD (Keycloak Admin API, suppression en cascade) | ✅ Livré |
+| F-19 : Configuration des fournisseurs LLM à chaud (SettingsPanel) | ✅ Livré |
+| F-20 : Nettoyage automatique des fichiers expirés (TTL 7 jours, Celery beat) | ✅ Livré |
+| F-21 : Dialogue de clarification interactif (état `awaiting_clarification`) | ✅ Livré |
+| F-22 : Constructeur manuel de graphiques (côté client, 10 000 lignes max) | ✅ Livré |
 
 ---
 
 **Conclusion du chapitre**
 
-Ce cinquième chapitre a présenté la démarche de validation complète de la plateforme ClarIA, structurée en trois niveaux complémentaires : **40 tests Pytest (40 fonctions de test, 100% passés)**, 5 scénarios de validation fonctionnelle, et des mesures de performance en conditions réelles. Les quatre anomalies identifiées — `NoResultFoundError`, race condition du rate limiter, spinner infini sur fichiers volumineux, et requêtes comparatives non détectées — ont toutes été corrigées avant la livraison. Le bilan final confirme que l'ensemble des 22 exigences fonctionnelles du cahier des charges ont été satisfaites. La plateforme ClarIA est prête pour un déploiement en production dans l'environnement SKATYS, avec un pipeline IA robuste, une sécurité Keycloak éprouvée, et une interface utilisateur intuitive et réactive.
+Ce cinquième chapitre a présenté la démarche de validation complète de la plateforme ClarIA, structurée en trois niveaux complémentaires : **44 tests Pytest (40 fonctions de test, 100% passés)**, 5 scénarios de validation fonctionnelle, et des mesures de performance en conditions réelles. Les quatre anomalies identifiées — `NoResultFoundError`, race condition du rate limiter, spinner infini sur fichiers volumineux, et requêtes comparatives non détectées — ont toutes été corrigées avant la livraison. Le bilan final confirme que l'ensemble des **22 exigences fonctionnelles** du cahier des charges ont été satisfaites. La plateforme ClarIA est prête pour un déploiement en production dans l'environnement SKATYS, avec un pipeline IA robuste, une sécurité Keycloak éprouvée, et une interface utilisateur intuitive et réactive.

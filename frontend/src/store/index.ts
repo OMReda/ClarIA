@@ -14,7 +14,7 @@ export type AppStatus =
   | 'completed'
   | 'error'
 
-export type ToastSeverity = 'info' | 'success' | 'error' | 'warning'
+export type ToastSeverity = 'info' | 'success' | 'error' | 'warning' | 'deleted' | 'modified'
 
 export interface Toast {
   id: string

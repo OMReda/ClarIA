@@ -72,7 +72,7 @@ Le cœur intelligent de la plateforme est le module **Aski**, une interface conv
 
 Les graphiques produits peuvent être épinglés sur un **Tableau de Bord** personnalisable par glisser-déposer (`react-grid-layout`) et persisté en base de données sous forme de configuration JSON (plafond de 500 Ko). Il est également possible de créer des **graphiques manuellement** (via un constructeur intégré traitant jusqu'à 10 000 lignes côté client) et d'ajouter des **indicateurs KPI** (somme, moyenne, comptage, minimum, maximum) depuis les données du fichier actif. La sécurité est renforcée par un limiteur de débit Redis (30 requêtes par utilisateur par heure) et une validation stricte des fichiers téléversés (libmagic, signature d'octets, limite à 10 Mo, 100 000 lignes maximum).
 
-Les tests de validation automatisés démontrent que la plateforme ClarIA répond à l'ensemble des exigences fonctionnelles et non fonctionnelles définies dans le cahier des charges, avec une suite de **40 tests passant à 100%**.
+Les tests de validation automatisés démontrent que la plateforme ClarIA répond à l'ensemble des exigences fonctionnelles et non fonctionnelles définies dans le cahier des charges, avec une suite de **44 tests passant à 100%**.
 
 **Mots-clés :** Intelligence Artificielle, Génération de Graphiques, Langage Naturel, PandasAI, LLM, Ollama, FastAPI, React, Keycloak, Tableau de Bord, Visualisation de Données, Celery, Redis, WebSocket.
 
@@ -88,7 +88,7 @@ The intelligent core of the platform is the **Aski** module, a conversational in
 
 Generated charts can be pinned to a customizable drag-and-drop **Dashboard** (`react-grid-layout`), persisted in the database as a JSON configuration (500 KB cap). Users can also create **charts manually** (via a built-in builder processing up to 10,000 rows client-side) and add **KPI indicators** (sum, average, count, minimum, maximum) from the active file's data. Security is reinforced by a Redis rate limiter (30 requests per user per hour) and strict file upload validation (libmagic, byte signature, 10 MB limit, 100,000 rows maximum).
 
-Automated validation testing demonstrates that the ClarIA platform meets all functional and non-functional requirements defined in the project specification, with a test suite of **40 tests passing at 100%**.
+Automated validation testing demonstrates that the ClarIA platform meets all functional and non-functional requirements defined in the project specification, with a test suite of **44 tests passing at 100%**.
 
 **Keywords:** Artificial Intelligence, Chart Generation, Natural Language Processing, PandasAI, LLM, Ollama, FastAPI, React, Keycloak, Dashboard, Data Visualization, Celery, Redis, WebSocket.
 
@@ -118,7 +118,7 @@ Automated validation testing demonstrates that the ClarIA platform meets all fun
 - **Figure 20 :** Capture — Interface conversationnelle Aski avec graphique généré (AskiPage)............ [Page X]
 - **Figure 21 :** Capture — Tableau de bord personnalisable avec KPI Cards (DashboardPage)............... [Page X]
 - **Figure 22 :** Capture — Panneau d'administration — gestion des utilisateurs Keycloak (AdminPage)..... [Page X]
-- **Figure 23 :** Résultats de la suite de tests automatisés — 40 tests, 100% de réussite................ [Page X]
+- **Figure 23 :** Résultats de la suite de tests automatisés — 44 tests, 100% de réussite................ [Page X]
 
 ---
 
@@ -130,7 +130,7 @@ Automated validation testing demonstrates that the ClarIA platform meets all fun
 - **Tableau 4 :** Types de graphiques supportés, mots-clés de détection et cas d'usage recommandés....... [Page X]
 - **Tableau 5 :** Stack technologique complet — Backend, Frontend, Infrastructure, Sécurité.............. [Page X]
 - **Tableau 6 :** Matrice de validation des dépendances (PandasAI, Keycloak 26, Redis, ECharts 5).... [Page X]
-- **Tableau 7 :** Résultats des tests automatisés par catégorie — 40 tests, répartition par module........... [Page X]
+- **Tableau 7 :** Résultats des tests automatisés par catégorie — 44 tests, répartition par module........... [Page X]
 - **Tableau 8 :** Évaluation des performances du pipeline (latences mesurées par composant).............. [Page X]
 - **Tableau 9 :** Limites et seuils configurables de la plateforme (taille, lignes, débit)............... [Page X]
 
@@ -226,7 +226,7 @@ Ce rapport est structuré en cinq chapitres :
 
 - **Le Chapitre 4** décrit la réalisation technique : architecture applicative, développement du backend FastAPI, du frontend React, du pipeline IA (PandasAI + orchestration multi-fournisseurs + chart_resolver), du tableau de bord dynamique, des mécanismes de sécurité, et des difficultés rencontrées avec les solutions adoptées.
 
-- **Le Chapitre 5** dresse le bilan des tests : résultats de la suite de 40 tests automatisés, évaluation des performances du pipeline bout-en-bout, analyse des limites actuelles et perspectives d'amélioration.
+- **Le Chapitre 5** dresse le bilan des tests : résultats de la suite de 44 tests automatisés, évaluation des performances du pipeline bout-en-bout, analyse des limites actuelles et perspectives d'amélioration.
 
 Le rapport se conclut par une **Conclusion Générale** synthétisant les apports techniques et fonctionnels du projet, évaluant l'impact potentiel de ClarIA dans le contexte de la démocratisation de l'analyse de données, et traçant les perspectives d'évolution futures de la plateforme.
 

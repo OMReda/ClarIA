@@ -105,7 +105,7 @@ export function UploadPage({ onOpenDashboard, onOpenAski }: UploadPageProps) {
     
     // Always remove from local state so the user isn't stuck
     removeDataset(deletingDsId)
-    addToast('success', `${dsName} supprimé avec succès`)
+    addToast('deleted', `${dsName} supprimé avec succès`)
     if (datasets.length === 1) {
       resetAll()
     }
