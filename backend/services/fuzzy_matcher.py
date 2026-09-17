@@ -127,15 +127,26 @@ def extract_column_references(prompt: str, columns: List[str]) -> List[str]:
     """
     Heuristically extract likely column references from a user prompt.
     Returns a list of terms that *might* be column names.
+
+    Handles both single-word columns ('Région') and multi-word columns
+    ('Chiffre d'Affaires') by trying 1-, 2-, and 3-word n-grams.
     """
-    # Simple heuristic: any token that has a fuzzy match score ≥ mid threshold
     tokens = prompt.split()
     references = []
-    for token in tokens:
-        clean = token.strip("'\",.!?():;")
-        if len(clean) < 2:
-            continue
-        result = process.extractOne(clean, columns, scorer=fuzz.WRatio)
-        if result and result[1] >= settings.fuzzy_mid_threshold:
-            references.append(clean)
+    seen = set()
+
+    # Try n-grams of size 3, 2, 1 (longest match first)
+    for n in (3, 2, 1):
+        for i in range(len(tokens) - n + 1):
+            ngram = " ".join(tokens[i:i+n])
+            clean = ngram.strip("'\",.!?():;")
+            if len(clean) < 2 or clean.lower() in seen:
+                continue
+            result = process.extractOne(clean, columns, scorer=fuzz.WRatio)
+            if result and result[1] >= settings.fuzzy_mid_threshold:
+                references.append(clean)
+                seen.add(clean.lower())
+                # Skip tokens consumed by this n-gram
+                break
     return references
+

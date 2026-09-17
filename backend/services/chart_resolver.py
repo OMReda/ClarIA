@@ -669,11 +669,14 @@ def _area(df: pd.DataFrame, x_col: str, y_cols: List[str]) -> Dict[str, Any]:
 
 
 def _pie(df: pd.DataFrame, name_col: str, value_col: str) -> Dict[str, Any]:
-    data = [
-        {"name": str(n), "value": float(v)}
-        for n, v in zip(_clean(df[name_col]), _clean(df[value_col]))
-        if v is not None
-    ]
+    data = []
+    for n, v in zip(_clean(df[name_col]), _clean(df[value_col])):
+        if v is None:
+            continue
+        try:
+            data.append({"name": str(n), "value": float(v)})
+        except (ValueError, TypeError):
+            continue  # skip non-numeric values instead of crashing
     
     # Sort by value descending
     data.sort(key=lambda x: x["value"], reverse=True)

@@ -206,7 +206,7 @@ def build_columns_metadata(df: pd.DataFrame) -> List[Dict[str, Any]]:
     df_typed = df.copy()
     for col in df_typed.select_dtypes(include="object").columns:
         try:
-            df_typed[col] = pd.to_datetime(df_typed[col], format="mixed", dayfirst=False)
+            df_typed[col] = pd.to_datetime(df_typed[col], format="mixed", dayfirst=True)
         except (ValueError, TypeError):
             pass
 

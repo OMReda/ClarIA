@@ -16,7 +16,7 @@ import pandas as pd
 
 # Patterns
 _FR_NUMBER_RE = re.compile(
-    r"^\s*-?\d{1,3}(?:[\s\u00a0]\d{3})*(?:,\d+)?\s*$"
+    r"^\s*-?\d{1,3}(?:[\s\u00a0.]\d{3})*(?:,\d+)?\s*$"
 )
 _FR_DATE_RE = re.compile(
     r"^\s*(\d{1,2})[/\-](\d{1,2})[/\-](\d{4})\s*$"
@@ -28,8 +28,8 @@ def _is_fr_number(value: str) -> bool:
 
 
 def _parse_fr_number(value: str) -> float:
-    # Remove narrow/regular spaces (thousands separator), replace comma decimal
-    cleaned = re.sub(r"[\s\u00a0]", "", value.strip())
+    # Remove narrow/regular spaces AND dots (thousands separator), replace comma decimal
+    cleaned = re.sub(r"[\s\u00a0.]", "", value.strip())
     cleaned = cleaned.replace(",", ".")
     return float(cleaned)
 
