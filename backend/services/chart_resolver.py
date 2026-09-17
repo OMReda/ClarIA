@@ -283,7 +283,47 @@ def detect_chart_type(
             return True
         return False
 
-    # ── Keyword-first matching ────────────────────────────────────────────────
+    # ── EXPLICIT chart type names (HIGHEST PRIORITY) ────────────────────────
+    # When the user literally names a chart type, that ALWAYS wins over
+    # contextual keywords like "évolution", "par mois", "tendance", etc.
+    # This prevents: "camembert par mois" → line (because "par mois" is a line keyword)
+    _EXPLICIT_PIE = ["camembert", "cammembert", "camenbert", "pie", "donut"]
+    _EXPLICIT_BAR = ["barres", "barre"]  # NOT "bar" alone (too short, ambiguous)
+    _EXPLICIT_LINE = ["courbe", "ligne"]  # NOT "line" alone
+    _EXPLICIT_SCATTER = ["nuage de points", "nuages de points", "scatter"]
+    _EXPLICIT_AREA = ["aire"]
+    _EXPLICIT_RADAR = ["radar", "toile d'araignee", "araignee", "spider"]
+    _EXPLICIT_HEATMAP = ["carte de chaleur", "carte thermique", "heatmap"]
+    _EXPLICIT_HISTOGRAM = ["histogramme"]
+
+    # Check explicit chart names FIRST — user intent is crystal clear
+    if _contains_word(prompt_text, _EXPLICIT_PIE):
+        logger.info("Chart detection: EXPLICIT chart name → 'pie'. Prompt: '%s'", prompt_text)
+        return "pie"
+    if _contains_word(prompt_text, _EXPLICIT_SCATTER):
+        logger.info("Chart detection: EXPLICIT chart name → 'scatter'. Prompt: '%s'", prompt_text)
+        return "scatter"
+    if _contains_word(prompt_text, _EXPLICIT_AREA):
+        logger.info("Chart detection: EXPLICIT chart name → 'area'. Prompt: '%s'", prompt_text)
+        return "area"
+    if _contains_word(prompt_text, _EXPLICIT_RADAR):
+        logger.info("Chart detection: EXPLICIT chart name → 'radar'. Prompt: '%s'", prompt_text)
+        return "radar"
+    if _contains_word(prompt_text, _EXPLICIT_HEATMAP):
+        logger.info("Chart detection: EXPLICIT chart name → 'heatmap'. Prompt: '%s'", prompt_text)
+        return "heatmap"
+    if _contains_word(prompt_text, _EXPLICIT_BAR):
+        logger.info("Chart detection: EXPLICIT chart name → 'bar'. Prompt: '%s'", prompt_text)
+        return "bar"
+    if _contains_word(prompt_text, _EXPLICIT_LINE):
+        logger.info("Chart detection: EXPLICIT chart name → 'line'. Prompt: '%s'", prompt_text)
+        return "line"
+    # "histogramme" alone → histogram, but "histogramme des X" → bar (handled below)
+    if _contains_word(prompt_text, _EXPLICIT_HISTOGRAM) and not _contains_word(prompt_text, ["histogramme des"]):
+        logger.info("Chart detection: EXPLICIT chart name → 'histogram'. Prompt: '%s'", prompt_text)
+        return "histogram"
+
+    # ── Keyword-based matching (contextual — only if no explicit chart name) ──
     # Only scan the raw prompt text for explicit chart types
     if _check_and_log("histogram", _HISTOGRAM_KW) and not _contains_word(prompt_text, _LINE_KW):
         return "histogram"
@@ -296,6 +336,7 @@ def detect_chart_type(
         return "radar"
     if _check_and_log("line", _LINE_KW):
         return "line"
+
     if _contains_word(prompt_text, _PIE_KW):
         # Disambiguation: bare 'répartition' on a numeric-only column means histogram,
         # not pie. Only resolve to pie when categorical columns are present OR when an
