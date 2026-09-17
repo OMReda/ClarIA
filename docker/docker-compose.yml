@@ -7,7 +7,7 @@ services:
     environment:
       POSTGRES_DB:       plateforme
       POSTGRES_USER:     plateforme
-      POSTGRES_PASSWORD: plateforme
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -34,7 +34,7 @@ services:
     command: start-dev --import-realm --proxy-headers xforwarded
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
-      KC_BOOTSTRAP_ADMIN_PASSWORD: CqKiAA2CEdMWXLixQfWN3kkqVjmw72D_
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD:-changeme}
     volumes:
       - ./infra/keycloak/claria-realm.json:/opt/keycloak/data/import/realm.json
     restart: unless-stopped
@@ -75,7 +75,7 @@ services:
         alembic -c backend/alembic.ini upgrade head
       "
     environment:
-      DATABASE_URL_SYNC: postgresql+psycopg2://plateforme:plateforme@postgres:5432/plateforme
+      DATABASE_URL_SYNC: postgresql+psycopg2://plateforme:${POSTGRES_PASSWORD:-changeme}@postgres:5432/plateforme
     depends_on:
       postgres:
         condition: service_healthy
@@ -90,8 +90,8 @@ services:
     restart: unless-stopped
     env_file: .env
     environment:
-      DATABASE_URL:      postgresql+asyncpg://plateforme:plateforme@postgres:5432/plateforme
-      DATABASE_URL_SYNC: postgresql+psycopg2://plateforme:plateforme@postgres:5432/plateforme
+      DATABASE_URL:      postgresql+asyncpg://plateforme:${POSTGRES_PASSWORD:-changeme}@postgres:5432/plateforme
+      DATABASE_URL_SYNC: postgresql+psycopg2://plateforme:${POSTGRES_PASSWORD:-changeme}@postgres:5432/plateforme
       REDIS_URL:         redis://redis:6379/0
       OLLAMA_BASE_URL:   http://ollama:11434
       KEYCLOAK_SERVER_URL: http://keycloak:8080
@@ -122,7 +122,7 @@ services:
     restart: unless-stopped
     env_file: .env
     environment:
-      DATABASE_URL_SYNC: postgresql+psycopg2://plateforme:plateforme@postgres:5432/plateforme
+      DATABASE_URL_SYNC: postgresql+psycopg2://plateforme:${POSTGRES_PASSWORD:-changeme}@postgres:5432/plateforme
       REDIS_URL:         redis://redis:6379/0
       OLLAMA_BASE_URL:   http://ollama:11434
       KEYCLOAK_SERVER_URL: http://keycloak:8080
