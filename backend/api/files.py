@@ -21,6 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.core.config import get_settings
 from backend.core.database import get_async_session
+from backend.core.error_catalog import user_error
 from backend.core.security import get_current_user, User
 from backend.models.file import File as FileModel
 from backend.models.prompt import Prompt as PromptModel
@@ -73,11 +74,9 @@ class FileDataResponse(BaseModel):
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
-def _error(code: str, message: str, details: Optional[Dict] = None, http_status: int = 400):
-    return HTTPException(
-        status_code=http_status,
-        detail={"error": {"code": code, "message": message, "details": details or {}}},
-    )
+def _ve(exc: FileValidationError) -> HTTPException:
+    """Convert a FileValidationError into a user_error HTTPException."""
+    return user_error(exc.code, details=exc.details, **exc.details)
 
 
 
@@ -95,8 +94,8 @@ async def upload_file(
     try:
         check_file_size(len(raw_bytes))
     except FileValidationError as exc:
-        raise _error(exc.code, exc.message, exc.details)
-        
+        raise _ve(exc)
+
     # ── Check for duplicate filename ──────────────────────────────────────────
     filename = file.filename or "upload"
     stmt = select(FileModel).where(
@@ -106,16 +105,16 @@ async def upload_file(
     )
     result = await db.execute(stmt)
     if result.scalars().first():
-        raise _error("DUPLICATE_FILE", f"Un fichier nommé '{filename}' a déjà été importé.")
+        raise user_error("DUPLICATE_FILE")
 
     if len(raw_bytes) == 0:
-        raise _error("EMPTY_FILE", "The uploaded file is empty.")
+        raise user_error("EMPTY_FILE")
 
     # ── Content-signature validation ─────────────────────────────────────────
     try:
         file_type = detect_content_type(raw_bytes[:2048], filename=file.filename or "")
     except FileValidationError as exc:
-        raise _error(exc.code, exc.message, exc.details)
+        raise _ve(exc)
 
     # ── Parse file ────────────────────────────────────────────────────────────
     file_id = uuid.uuid4()
@@ -155,9 +154,9 @@ async def upload_file(
         check_row_count(df)
 
     except FileValidationError as exc:
-        raise _error(exc.code, exc.message, exc.details)
+        raise _ve(exc)
     except Exception as exc:
-        raise _error("PARSE_ERROR", f"Could not parse the file: {exc}")
+        raise user_error("PARSE_ERROR")
 
     # ── Build metadata + preview ──────────────────────────────────────────────
     columns_metadata = build_columns_metadata(df)
@@ -203,16 +202,16 @@ async def select_sheet(
     try:
         fid = uuid.UUID(file_id)
     except ValueError:
-        raise _error("INVALID_FILE_ID", "file_id must be a valid UUID.")
+        raise user_error("INVALID_FILE_ID")
 
     result = await db.execute(select(FileModel).where(FileModel.id == fid))
     file_record = result.scalar_one_or_none()
     if not file_record:
-        raise _error("FILE_NOT_FOUND", "File not found.", http_status=404)
+        raise user_error("FILE_NOT_FOUND", http_status=404)
 
     # Session ownership check — compare as strings to handle GUID vs str differences
     if file_record.owner_id != user.sub:
-        raise _error("FORBIDDEN", "This file does not belong to you.", http_status=403)
+        raise user_error("FORBIDDEN", http_status=403)
 
     # Re-parse with selected sheet (async-safe: offload blocking read to thread pool)
     try:
@@ -222,9 +221,9 @@ async def select_sheet(
         df, sheet_names = read_excel_safe(raw_bytes, sheet_name=body.sheet_name)
         check_row_count(df)
     except FileValidationError as exc:
-        raise _error(exc.code, exc.message, exc.details)
+        raise _ve(exc)
     except Exception as exc:
-        raise _error("PARSE_ERROR", f"Could not parse sheet '{body.sheet_name}': {exc}")
+        raise user_error("PARSE_ERROR")
 
     columns_metadata = build_columns_metadata(df)
     preview_rows = build_preview_rows(df)
@@ -257,15 +256,15 @@ async def get_dashboard_config(
     try:
         fid = uuid.UUID(file_id)
     except ValueError:
-        raise _error("INVALID_FILE_ID", "file_id must be a valid UUID.")
+        raise user_error("INVALID_FILE_ID")
 
     result = await db.execute(select(FileModel).where(FileModel.id == fid))
     file_record = result.scalar_one_or_none()
     if not file_record:
-        raise _error("FILE_NOT_FOUND", "File not found.", http_status=404)
+        raise user_error("FILE_NOT_FOUND", http_status=404)
 
     if file_record.owner_id != user.sub:
-        raise _error("FORBIDDEN", "This file does not belong to you.", http_status=403)
+        raise user_error("FORBIDDEN", http_status=403)
 
     return {"dashboard_config": file_record.dashboard_config or {}}
 
@@ -281,20 +280,20 @@ async def save_dashboard_config(
     try:
         fid = uuid.UUID(file_id)
     except ValueError:
-        raise _error("INVALID_FILE_ID", "file_id must be a valid UUID.")
+        raise user_error("INVALID_FILE_ID")
 
     # Size guard: prevent oversized dashboard configs from bloating the DB
     config_json = json.dumps(config)
     if len(config_json) > 512_000:  # 500 KB cap
-        raise _error("PAYLOAD_TOO_LARGE", "Dashboard config exceeds the 500 KB maximum size.")
+        raise user_error("PAYLOAD_TOO_LARGE")
 
     result = await db.execute(select(FileModel).where(FileModel.id == fid))
     file_record = result.scalar_one_or_none()
     if not file_record:
-        raise _error("FILE_NOT_FOUND", "File not found.", http_status=404)
+        raise user_error("FILE_NOT_FOUND", http_status=404)
 
     if file_record.owner_id != user.sub:
-        raise _error("FORBIDDEN", "This file does not belong to you.", http_status=403)
+        raise user_error("FORBIDDEN", http_status=403)
 
     file_record.dashboard_config = config
     flag_modified(file_record, "dashboard_config")
@@ -313,15 +312,15 @@ async def get_file_data(
     try:
         fid = uuid.UUID(file_id)
     except ValueError:
-        raise _error("INVALID_FILE_ID", "file_id must be a valid UUID.")
+        raise user_error("INVALID_FILE_ID")
 
     result = await db.execute(select(FileModel).where(FileModel.id == fid))
     file_record = result.scalar_one_or_none()
     if not file_record:
-        raise _error("FILE_NOT_FOUND", "File not found.", http_status=404)
+        raise user_error("FILE_NOT_FOUND", http_status=404)
 
     if file_record.owner_id != user.sub:
-        raise _error("FORBIDDEN", "This file does not belong to you.", http_status=403)
+        raise user_error("FORBIDDEN", http_status=403)
 
     try:
         raw_bytes = await asyncio.to_thread(
@@ -332,7 +331,7 @@ async def get_file_data(
         else:
             df = read_csv_safe(raw_bytes)
     except Exception as exc:
-        raise _error("PARSE_ERROR", f"Could not parse file data: {exc}")
+        raise user_error("PARSE_ERROR")
 
     total_rows = len(df)
     is_truncated = total_rows > 10000
@@ -357,15 +356,15 @@ async def delete_file(
     try:
         fid = uuid.UUID(file_id)
     except ValueError:
-        raise _error("INVALID_FILE_ID", "file_id must be a valid UUID.")
+        raise user_error("INVALID_FILE_ID")
 
     result = await db.execute(select(FileModel).where(FileModel.id == fid))
     file_record = result.scalar_one_or_none()
     if not file_record:
-        raise _error("FILE_NOT_FOUND", "File not found.", http_status=404)
+        raise user_error("FILE_NOT_FOUND", http_status=404)
 
     if file_record.owner_id != user.sub:
-        raise _error("FORBIDDEN", "This file does not belong to you.", http_status=403)
+        raise user_error("FORBIDDEN", http_status=403)
 
     import shutil
     from pathlib import Path
@@ -442,25 +441,25 @@ async def get_unique_values(
     try:
         fid = uuid.UUID(file_id)
     except ValueError:
-        raise _error("INVALID_FILE_ID", "file_id must be a valid UUID.")
+        raise user_error("INVALID_FILE_ID")
 
     result = await db.execute(select(FileModel).where(FileModel.id == fid))
     file_record = result.scalar_one_or_none()
     if not file_record:
-        raise _error("FILE_NOT_FOUND", "File not found.", http_status=404)
+        raise user_error("FILE_NOT_FOUND", http_status=404)
 
     if file_record.owner_id != user.sub:
-        raise _error("FORBIDDEN", "This file does not belong to you.", http_status=403)
+        raise user_error("FORBIDDEN", http_status=403)
 
     try:
         df = await asyncio.to_thread(
             lambda: load_dataframe_from_path(file_record.storage_path, sheet_name=file_record.sheet_name)
         )
     except Exception as exc:
-        raise _error("PARSE_ERROR", f"Could not parse file data: {exc}")
+        raise user_error("PARSE_ERROR")
 
     if column not in df.columns:
-        raise _error("INVALID_COLUMN", f"Column '{column}' not found in the dataset.")
+        raise user_error("INVALID_COLUMN", column=column)
 
     # Get all unique non-null values, sorted, capped at 1000
     unique_vals = (
@@ -489,29 +488,29 @@ async def get_aggregate(
     try:
         fid = uuid.UUID(file_id)
     except ValueError:
-        raise _error("INVALID_FILE_ID", "file_id must be a valid UUID.")
+        raise user_error("INVALID_FILE_ID")
 
     result = await db.execute(select(FileModel).where(FileModel.id == fid))
     file_record = result.scalar_one_or_none()
     if not file_record:
-        raise _error("FILE_NOT_FOUND", "File not found.", http_status=404)
+        raise user_error("FILE_NOT_FOUND", http_status=404)
 
     if file_record.owner_id != user.sub:
-        raise _error("FORBIDDEN", "This file does not belong to you.", http_status=403)
-            
+        raise user_error("FORBIDDEN", http_status=403)
+
     if not column or not column.strip():
-        raise _error("INVALID_COLUMN", "Column parameter is required and cannot be empty.")
+        raise user_error("INVALID_COLUMN", column=column or "(empty)")
 
     valid_aggs = ("sum", "avg", "count", "min", "max")
     if aggregation not in valid_aggs:
-        raise _error("INVALID_AGGREGATION", f"Aggregation must be one of {valid_aggs}")
+        raise user_error("INVALID_AGGREGATION")
 
     try:
         df = await asyncio.to_thread(
             lambda: load_dataframe_from_path(file_record.storage_path, sheet_name=file_record.sheet_name)
         )
     except Exception as exc:
-        raise _error("PARSE_ERROR", f"Could not parse file data: {exc}")
+        raise user_error("PARSE_ERROR")
 
     # Apply optional filters
     if filters:
@@ -544,13 +543,14 @@ async def get_aggregate(
                 df = df[mask]
         except (json.JSONDecodeError, Exception):
             pass  # ignore malformed filters, use full dataset
+
     if column not in df.columns:
-        raise _error("INVALID_COLUMN", f"Column '{column}' not found in the dataset.")
-        
+        raise user_error("INVALID_COLUMN", column=column)
+
     if aggregation != "count":
         import pandas.api.types as ptypes
         if not ptypes.is_numeric_dtype(df[column]):
-            raise _error("INVALID_DTYPE", f"Aggregation '{aggregation}' requires a numeric column.")
+            raise user_error("INVALID_DTYPE", column=column)
 
     val = 0.0
     try:
@@ -564,11 +564,11 @@ async def get_aggregate(
             val = float(df[column].min())
         elif aggregation == "max":
             val = float(df[column].max())
-            
+
         import math
         if math.isnan(val) or math.isinf(val):
             val = 0.0
     except Exception as exc:
-        raise _error("AGGREGATION_ERROR", f"Failed to compute {aggregation} on '{column}': {exc}")
-        
+        raise user_error("AGGREGATION_ERROR", column=column)
+
     return {"value": val}

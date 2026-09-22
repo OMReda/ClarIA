@@ -16,6 +16,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.core.database import get_async_session
+from backend.core.error_catalog import user_error
 from backend.core.security import get_current_user, User
 from backend.models.file import File as FileModel
 from backend.models.prompt import Prompt
@@ -51,15 +52,6 @@ class PromptResponse(BaseModel):
     error_message: Optional[str] = None
 
 
-def _error(code: str, message: str, details: Optional[Dict] = None, http_status: int = 400):
-    return HTTPException(
-        status_code=http_status,
-        detail={"error": {"code": code, "message": message, "details": details or {}}},
-    )
-
-
-
-
 
 # ── POST /api/v1/files/{file_id}/prompts ─────────────────────────────────────
 
@@ -79,34 +71,32 @@ async def submit_prompt(
     try:
         fid = uuid.UUID(file_id)
     except ValueError:
-        raise _error("INVALID_FILE_ID", "file_id must be a valid UUID.")
+        raise user_error("INVALID_FILE_ID")
 
     # ── Validate file ownership ────────────────────────────────────────────
     result = await db.execute(select(FileModel).where(FileModel.id == fid))
     file_record = result.scalar_one_or_none()
     if not file_record:
-        raise _error("FILE_NOT_FOUND", "File not found.", http_status=404)
+        raise user_error("FILE_NOT_FOUND", http_status=404)
     if str(file_record.owner_id) != str(user.sub):
-        raise _error("FORBIDDEN", "This file does not belong to your session.", http_status=403)
+        raise user_error("FORBIDDEN", http_status=403)
     if file_record.status != "validated":
-        raise _error(
-            "FILE_NOT_READY",
-            f"File is not ready for querying (status: {file_record.status}).",
-        )
+        raise user_error("FILE_NOT_READY", status=file_record.status)
 
     if not body.text.strip():
-        raise _error("EMPTY_PROMPT", "Prompt text cannot be empty.")
+        raise user_error("EMPTY_PROMPT")
 
     # ── Rate limiting ────────────────────────────────────────────────────
     allowed, count = check_and_increment(user.sub)
     if not allowed:
         from backend.core.config import get_settings
         limit = get_settings().rate_limit_prompts_per_hour
-        raise _error(
+        raise user_error(
             "RATE_LIMIT_EXCEEDED",
-            f"You have reached the limit of {limit} prompts per hour.",
-            details={"limit": limit, "current_count": count},
             http_status=429,
+            details={"limit": limit, "current_count": count},
+            limit=limit,
+            current_count=count,
         )
 
     # ── Read per-request LLM config from headers ────────────────────────────
@@ -122,7 +112,7 @@ async def submit_prompt(
     if provider and provider != "local" and not api_key:
         provider_labels = {"openai": "OpenAI", "anthropic": "Anthropic", "google": "Google"}
         label = provider_labels.get(provider, provider.title())
-        raise _error("MISSING_API_KEY", f"Veuillez entrer votre clé API {label} dans les paramètres pour continuer.", http_status=400)
+        raise user_error("MISSING_API_KEY", provider=label)
 
     # ── Create prompt record ───────────────────────────────────────────────────
     prompt = Prompt(file_id=fid, raw_text=body.text.strip(), status="pending")
@@ -149,20 +139,20 @@ async def get_prompt(
     try:
         pid = uuid.UUID(prompt_id)
     except ValueError:
-        raise _error("INVALID_PROMPT_ID", "prompt_id must be a valid UUID.")
+        raise user_error("INVALID_PROMPT_ID")
 
     result = await db.execute(
         select(Prompt).where(Prompt.id == pid)
     )
     prompt = result.scalar_one_or_none()
     if not prompt:
-        raise _error("PROMPT_NOT_FOUND", "Prompt not found.", http_status=404)
+        raise user_error("PROMPT_NOT_FOUND", http_status=404)
 
     # Ownership: load file explicitly (avoid lazy relationship)
     file_result = await db.execute(select(FileModel).where(FileModel.id == prompt.file_id))
     file_record = file_result.scalar_one_or_none()
     if not file_record or str(file_record.owner_id) != str(user.sub):
-        raise _error("FORBIDDEN", "This prompt does not belong to your session.", http_status=403)
+        raise user_error("FORBIDDEN", http_status=403)
 
     chart_payload = None
     if prompt.status == "completed" and prompt.chart:
@@ -196,26 +186,26 @@ async def clarify_prompt(
     try:
         pid = uuid.UUID(prompt_id)
     except ValueError:
-        raise _error("INVALID_PROMPT_ID", "prompt_id must be a valid UUID.")
+        raise user_error("INVALID_PROMPT_ID")
 
     result = await db.execute(select(Prompt).where(Prompt.id == pid))
     prompt = result.scalar_one_or_none()
     if not prompt:
-        raise _error("PROMPT_NOT_FOUND", "Prompt not found.", http_status=404)
+        raise user_error("PROMPT_NOT_FOUND", http_status=404)
 
     # Ownership: load file explicitly (avoid lazy relationship)
     file_result = await db.execute(select(FileModel).where(FileModel.id == prompt.file_id))
     file_record = file_result.scalar_one_or_none()
     if not file_record or str(file_record.owner_id) != str(user.sub):
-        raise _error("FORBIDDEN", "This prompt does not belong to your session.", http_status=403)
+        raise user_error("FORBIDDEN", http_status=403)
 
     if prompt.status != "awaiting_clarification":
-        raise _error(
+        raise user_error(
             "PROMPT_NOT_AWAITING_CLARIFICATION",
-            f"Prompt is not awaiting clarification (status: {prompt.status}).",
+            status=prompt.status,
         )
     if not body.answer.strip():
-        raise _error("EMPTY_ANSWER", "Clarification answer cannot be empty.")
+        raise user_error("EMPTY_ANSWER")
 
     prompt.clarification_answer = body.answer.strip()
     prompt.status = "pending"

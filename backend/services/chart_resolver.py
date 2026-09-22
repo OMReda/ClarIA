@@ -339,7 +339,7 @@ def detect_chart_type(
 
     if _contains_word(prompt_text, _PIE_KW):
         # Disambiguation: bare 'répartition' on a numeric-only column means histogram,
-        # not pie. Only resolve to pie when categorical columns are present OR when an
+        # not pie. Only resolve to pie when categorical/text columns are present OR when an
         # unambiguous pie keyword (camembert, pie, proportion, part de, donut) is used.
         _UNAMBIGUOUS_PIE_KW = [
             "camembert", "cammembert", "camenbert", "pie", "proportion", "part de", "pourcentage", "percentage", "donut"
@@ -348,10 +348,12 @@ def detect_chart_type(
             _contains_word(prompt_text, _REPARTITION_BARE_KW)
             and not _contains_word(prompt_text, _UNAMBIGUOUS_PIE_KW)
         )
-        if is_bare_repartition and len(categorical_cols) == 0 and len(numeric_cols) >= 1:
+        # Count text cols alongside categorical for the disambiguation guard
+        has_grouping_col = len(categorical_cols) > 0 or len(text_cols) > 0
+        if is_bare_repartition and not has_grouping_col and len(numeric_cols) >= 1:
             logger.info(
                 "Chart detection: bare 'répartition' with numeric-only columns → histogram "
-                "(no categorical columns to form pie slices). Prompt: '%s'", prompt_text
+                "(no categorical/text columns to form pie slices). Prompt: '%s'", prompt_text
             )
             return "histogram"
         logger.info("Chart detection: explicit keyword matched for 'pie'. Prompt: '%s'", prompt_text)
@@ -389,15 +391,34 @@ def detect_chart_type(
     n_cat = len(categorical_cols)
     n_dt  = len(datetime_cols)
     n_text = len(text_cols)
+    # Treat text columns like categorical for grouping purposes
+    n_cat_or_text = n_cat + n_text
+
+    # Guard: if no data-analysis keywords at all, refuse to guess a chart type.
+    # This prevents non-data prompts ("bonjour comment ça va") from getting a
+    # spurious fallback chart type.
+    _DATA_SIGNAL_KW = [
+        "ventes", "vente", "sales", "montant", "valeur", "value", "chiffre",
+        "budget", "revenu", "revenue", "produit", "product", "region", "pays",
+        "count", "total", "somme", "sum", "moyenne", "average", "max", "min",
+        "distribution", "repartition", "répartition", "evolution", "évolution",
+        "tendance", "trend", "compare", "comparer", "corrélation", "correlation",
+        "par", "by", "selon", "top", "flop", "ranking", "classement",
+        "données", "donnees", "data",
+    ]
+    has_data_signal = _contains_word(prompt_text, _DATA_SIGNAL_KW)
+    if prompt_text.strip() and not has_data_signal:
+        logger.info("Chart detection: no data signal in prompt → None. Prompt: '%s'", prompt_text)
+        return None
 
     fallback_type = None
 
     # 1. Only numerics → histogram (no grouping axis)
-    if n_num == 1 and n_cat == 0 and n_dt == 0 and n_text == 0:
+    if n_num == 1 and n_cat_or_text == 0 and n_dt == 0:
         fallback_type = "histogram"
 
     # 2. Two numerics, no categories → scatter (relationship between two measures)
-    elif n_num >= 2 and n_cat == 0 and n_dt == 0:
+    elif n_num >= 2 and n_cat_or_text == 0 and n_dt == 0:
         fallback_type = "scatter"
 
     # 3. Date column present — decide between line (trend) and bar (aggregate)
@@ -411,9 +432,9 @@ def detect_chart_type(
             )
             fallback_type = "bar"
 
-        # 3b. Dataset also has categorical columns AND prompt groups by a category
+        # 3b. Dataset also has categorical/text columns AND prompt groups by a category
         #     (not by a time unit) → bar   e.g. "ventes par produit cette annee"
-        elif n_cat >= 1:
+        elif n_cat_or_text >= 1:
             groups_by_time = _contains_word(prompt_text, _TIME_UNIT_KW)
             groups_by_category = _contains_word(prompt_text, ["par", "by", "selon", "per"])
             if groups_by_category and not groups_by_time:
@@ -430,8 +451,8 @@ def detect_chart_type(
         else:
             fallback_type = "line"
 
-    # 4. Categorical / text + numeric → bar (grouped aggregation)
-    elif (n_cat + n_text) >= 1 and n_num >= 1:
+    # 4. Categorical/text + numeric → bar (grouped aggregation)
+    elif n_cat_or_text >= 1 and n_num >= 1:
         fallback_type = "bar"
 
     if fallback_type:
@@ -718,7 +739,7 @@ def _pie(df: pd.DataFrame, name_col: str, value_col: str) -> Dict[str, Any]:
 
 
 def _scatter(df: pd.DataFrame, x_col: str, y_col: str) -> Dict[str, Any]:
-    data = list(zip(_clean(df[x_col]), _clean(df[y_col])))
+    data = [[x, y] for x, y in zip(_clean(df[x_col]), _clean(df[y_col]))]
     data = [d for d in data if None not in d]
     return {
         "tooltip": {"trigger": "item", "formatter": f"{x_col}: {{c[0]}}<br>{y_col}: {{c[1]}}"},

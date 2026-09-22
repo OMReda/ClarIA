@@ -8,9 +8,13 @@ Scenario 4: French locale numbers + dates are normalised
 Scenario 5: Latin-1 encoding is detected and parsed correctly
 Scenario 6: Multi-sheet Excel → 201 needs_sheet_selection + sheet list
 Scenario 7: Sheet selection → 200 + full preview
+
+Note: tests share a session-scoped in-memory SQLite DB. Each test that
+uploads a file uses a unique filename to avoid DUPLICATE_FILE 400 errors.
 """
 from __future__ import annotations
 
+import uuid
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient
@@ -130,6 +134,7 @@ async def test_s6_multisheet_excel(client: AsyncClient):
 @pytest.mark.asyncio
 async def test_s7_sheet_selection(client: AsyncClient):
     """Scenario 7: After multi-sheet upload, selecting a sheet returns full preview."""
+    unique_name = f"rapport_{uuid.uuid4().hex[:8]}.xlsx"
     xlsx_bytes = make_excel_bytes({
         "Ventes 2023": SAMPLE_ROWS,
         "Ventes 2024": SAMPLE_ROWS,
@@ -137,8 +142,9 @@ async def test_s7_sheet_selection(client: AsyncClient):
     # Upload
     upload_resp = await client.post(
         "/api/v1/files",
-        files={"file": ("rapport.xlsx", xlsx_bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+        files={"file": (unique_name, xlsx_bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
     )
+    assert upload_resp.status_code == 201, upload_resp.text
     file_id = upload_resp.json()["file_id"]
 
     # Select sheet
@@ -156,11 +162,11 @@ async def test_s7_sheet_selection(client: AsyncClient):
 @pytest.mark.asyncio
 async def test_session_auto_created(client: AsyncClient):
     """Session is auto-created on first upload even if X-Session-ID is new."""
-    new_session = "00000000-0000-0000-0000-000000000001"
+    unique_name = f"test_{uuid.uuid4().hex[:8]}.csv"
     csv_bytes = make_csv(SAMPLE_ROWS)
     resp = await client.post(
         "/api/v1/files",
-        files={"file": ("test.csv", csv_bytes, "text/csv")},
+        files={"file": (unique_name, csv_bytes, "text/csv")},
     )
     assert resp.status_code == 201
 

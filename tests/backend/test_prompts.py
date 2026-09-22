@@ -7,6 +7,10 @@ Scenario 12: Rate limit enforcement.
 Scenario 13: Fuzzy column matching thresholds.
 Scenario 14: Privacy assertion — LLM prompt bodies contain no cell values
              when LLM_PROVIDER is not 'local'. (Structural test.)
+
+Note on test isolation: The test session uses a shared in-memory SQLite DB.
+The upload endpoint checks for duplicate filenames per owner, so every call
+to _upload_csv uses a unique filename to avoid DUPLICATE_FILE collisions.
 """
 from __future__ import annotations
 
@@ -28,13 +32,15 @@ from backend.services.rate_limiter import check_and_increment
 # ─── Helpers ─────────────────────────────────────────────────────────────────
 
 async def _upload_csv(client: AsyncClient, rows=None) -> str:
+    """Upload a CSV with a unique filename to avoid duplicate-file 400 errors."""
     rows = rows or SAMPLE_ROWS
     csv_bytes = make_csv(rows)
+    unique_name = f"test_{uuid.uuid4().hex[:8]}.csv"
     resp = await client.post(
         "/api/v1/files",
-        files={"file": ("test.csv", csv_bytes, "text/csv")},
+        files={"file": (unique_name, csv_bytes, "text/csv")},
     )
-    assert resp.status_code == 201
+    assert resp.status_code == 201, resp.text
     return resp.json()["file_id"]
 
 
