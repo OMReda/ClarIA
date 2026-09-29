@@ -8,7 +8,6 @@ No code. No configuration per query. Just data and language.
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.11x-009688?style=flat-square&logo=fastapi&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?style=flat-square&logo=postgresql&logoColor=white)
 ![Tests](https://img.shields.io/badge/Tests-141%20passing-22c55e?style=flat-square)
-![License](https://img.shields.io/badge/License-MIT-6366f1?style=flat-square)
 
 ---
 
@@ -28,7 +27,6 @@ No code. No configuration per query. Just data and language.
 - [Privacy & security](#privacy--security)
 - [Future directions](#future-directions)
 - [Known limitations & feedback](#known-limitations--feedback)
-- [License](#license)
 
 ---
 
@@ -476,11 +474,6 @@ The project is functional and fully tested, but it is still in active developmen
 - The exact prompt you used
 - LLM provider and model name
 - The error message or unexpected output
-
-Pull requests are welcome too.
-
+- if there’s anything important or relevant that’s missing? I’d appreciate it if you could point out any gaps so I can make sure everything is properly included.
 ---
-
-## License
-
-MIT
+Pull requests are welcome too.
