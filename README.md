@@ -110,12 +110,14 @@ FastAPI (async, Uvicorn)
   ├─ POST   /api/v1/files                      upload + validate
   ├─ GET    /api/v1/files/{id}                 metadata + preview
   ├─ GET    /api/v1/files/{id}/data            full data (paginated)
-  ├─ POST   /api/v1/files/{id}/prompts         enqueue → Celery
-  ├─ POST   /api/v1/files/{id}/prompts/{pid}/clarify
+  ├─ POST   /api/v1/files/{id}/prompts         enqueue → Celery → 202
+  ├─ GET    /api/v1/prompts/{prompt_id}        poll status + result
+  ├─ POST   /api/v1/prompts/{prompt_id}/clarify answer clarification
   ├─ GET    /api/v1/files/{id}/dashboard-config
   ├─ PUT    /api/v1/files/{id}/dashboard-config
   ├─ WS     /ws/prompts/{id}                   pub/sub relay
-  ├─ GET    /api/v1/provider-status            Ollama health
+  ├─ GET    /api/v1/provider-status            LLM health check
+  ├─ GET    /api/v1/health                     app health check
   └─ CRUD   /api/v1/platform-users/*           admin only
 
 Celery worker  → PostgreSQL (SQLAlchemy sync)
@@ -211,7 +213,7 @@ http://localhost
 ### Backend
 
 > [!WARNING]
-> Python 3.11 is strictly required. PandasAI 3.x does not support Python 3.12+.
+> Python 3.10 or 3.11 is required. PandasAI 3.x does not support Python 3.12+. Python 3.11 is recommended.
 
 ```bash
 # 1. Create and activate virtualenv
