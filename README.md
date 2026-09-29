@@ -206,17 +206,17 @@ Double-click **`start.bat`** in the project root. It auto-detects your environme
 - Checks for `.venv` — if missing, tells you the exact commands to create it
 - Installs frontend `node_modules` if missing (first run only)
 - Starts Redis / Memurai automatically (tries `Memurai` then `memurai-developer` Windows service)
-- Opens **4 separate terminals**, each colour-coded:
+- Opens **5 windows** total:
 
-| Terminal | Colour | What runs |
+| Window | Colour | What runs |
 |---|---|---|
+| Launcher | ⬜ Default | Stays open — **press any key** here to stop everything |
 | Backend API | 🟩 Green | `uvicorn backend.main:app --reload --port 8000` |
 | Celery Worker | 🟪 Purple | `celery -A backend.workers.celery_app worker` |
 | Keycloak Auth | 🟨 Yellow | `start-keycloak.bat --import-realm` |
 | Frontend Vite | 🟦 Cyan | `npm run dev` (https://localhost:5173) |
 
 - Opens `https://localhost:5173` in your browser automatically
-- **Press any key** in the launcher window to stop all 4 servers cleanly
 
 > [!NOTE]
 > Native mode requires Redis or [Memurai](https://www.memurai.com/get-memurai) (free Redis for Windows). If neither is found, `start.bat` will tell you where to download it and exit.
