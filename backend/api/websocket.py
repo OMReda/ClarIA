@@ -151,12 +151,18 @@ async def ws_prompt_status(websocket: WebSocket, prompt_id: str):
     except WebSocketDisconnect:
         logger.debug("Client disconnected from ws:%s", prompt_id)
     finally:
-        await pubsub.unsubscribe(channel)
-        # Installed redis-py version is 4.6.0, which doesn't expose aclose() directly on this client type
-        import inspect
-        if hasattr(r, "aclose"):
-            await r.aclose()
-        else:
-            close_result = r.close()
-            if inspect.isawaitable(close_result):
-                await close_result
+        try:
+            await pubsub.unsubscribe(channel)
+        except Exception:
+            pass
+        try:
+            # redis-py 4.x exposes aclose() on some connection types; fall back to close()
+            if hasattr(r, "aclose"):
+                await r.aclose()
+            else:
+                import inspect
+                close_result = r.close()
+                if inspect.isawaitable(close_result):
+                    await close_result
+        except Exception:
+            pass

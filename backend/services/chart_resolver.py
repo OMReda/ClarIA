@@ -171,7 +171,10 @@ _YEAR_RANGE_RE = re.compile(
     re.IGNORECASE,
 )
 
+import logging
 import unicodedata
+
+logger = logging.getLogger(__name__)
 
 def _strip_accents(s: str) -> str:
     return ''.join(c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn')
@@ -259,10 +262,6 @@ def _contains_word(text: str, keywords: List[str]) -> bool:
                     return True
                     
     return False
-
-import logging
-
-logger = logging.getLogger(__name__)
 
 def detect_chart_type(
     prompt_text: str,

@@ -135,15 +135,20 @@ All settings are in `.env`. Key options:
 
 | Variable | Default | Description |
 |---|---|---|
-| `LLM_PROVIDER` | `local` | `local` \| `openai` \| `anthropic` |
+| `LLM_PROVIDER` | `local` | `local` \| `openai` \| `anthropic` \| `google` |
 | `LLM_MODEL` | `ollama/qwen2.5-coder:7b` | LiteLLM model string |
 | `OLLAMA_BASE_URL` | `http://ollama:11434` | Ollama API base |
 | `OPENAI_API_KEY` | — | Required when `LLM_PROVIDER=openai` |
+| `GOOGLE_API_KEY` | — | Required when `LLM_PROVIDER=google` |
 | `MAX_FILE_SIZE_MB` | `10` | Upload limit |
 | `MAX_ROWS` | `100000` | Row limit per file |
 | `RATE_LIMIT_PROMPTS_PER_HOUR` | `30` | Per-session hourly prompt limit |
 | `FUZZY_HIGH_THRESHOLD` | `80` | Score ≥ 80 → silent column correction |
 | `FUZZY_MID_THRESHOLD` | `50` | Score 50–79 → "did you mean?" question |
+| `KEYCLOAK_SERVER_URL` | `http://localhost:8080` | Keycloak server URL |
+| `KEYCLOAK_REALM` | `claria` | Keycloak realm name |
+| `KEYCLOAK_CLIENT_ID` | `claria-frontend` | Frontend OIDC client ID |
+| `KEYCLOAK_ADMIN_CLIENT_SECRET` | — | Admin service account secret |
 
 ## Privacy
 
@@ -154,11 +159,16 @@ All settings are in `.env`. Key options:
 
 ## Security notes
 
+- Authentication is handled by **Keycloak** (OpenID Connect / JWT). All API routes
+  require a valid Bearer token. The `require_admin` dependency gates administrative
+  endpoints to users with the `admin` realm role.
+- File and prompt access is enforced by owner-id checks on every endpoint.
 - The Celery worker mounts `/var/run/docker.sock` for `DockerSandbox`. In
   production, use a dedicated Docker daemon (Sysbox or rootless Docker) to
   reduce blast radius.
-- Sessions are anonymous UUIDs (no authentication in the Standard version). All file/prompt
-  access is gated by session ownership checks.
+- **`LLM_PROVIDER=local`** (default): data never leaves the host.
+- **Cloud providers (openai / anthropic / google)**: sample rows are sent to
+  the external API. Operator consent required.
 
 ## Supported chart types
 
@@ -166,6 +176,9 @@ All settings are in `.env`. Key options:
 |---|---|
 | Bar | barre, bar, par région, par catégorie |
 | Line | évolution, tendance, par date, par mois |
+| Area | aire, cumulé |
 | Pie | camembert, proportion, pourcentage |
 | Scatter | corrélation, nuage de points, vs |
 | Histogram | distribution, histogramme, fréquence |
+| Radar | radar, toile d'araignée, spider |
+| Heatmap | heatmap, carte de chaleur, matrice de corrélation |

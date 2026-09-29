@@ -49,10 +49,34 @@ node_modules/
 frontend/dist/
 frontend/.vite/
 
+# ── Frontend debug/verify scripts (development artifacts) ─────────────────────
+frontend/verify_banner.js
+frontend/verify_network.js
+frontend/verify_network_screenshot.png
+
 # ── Test artifacts ────────────────────────────────────────────────────────────
 _test_storage/
 scratch/
 temp_theme_extract/
+
+# ── Root-level one-off dev/migration scripts ──────────────────────────────────
+# These are local tooling scripts; not part of the deployable application.
+audit.py
+backfill.py
+clean_db.py
+generate_15k_file.py
+generate_test_file.py
+independent_sum.py
+insert_dummy.py
+refactor_files.py
+refactor_prompts.py
+refactor_websocket.py
+refactor_workers.py
+scrub_tests.py
+temp_sessions.py
+test_frontend_logic.py
+upload_test.py
+write_app.py
 
 # ── Large archives / binaries ─────────────────────────────────────────────────
 *.7z

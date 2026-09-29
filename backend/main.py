@@ -9,12 +9,15 @@ import sys
 # PandasAI 3.0.0 requires Python >=3.10 and <3.12.
 # Fail loudly here rather than letting workers crash with cryptic import errors.
 if sys.version_info < (3, 10) or sys.version_info >= (3, 12):
-    pass # Temporarily disabled for test run on 3.14
-    # raise RuntimeError(
-    #     f"Unsupported Python {sys.version}. "
-    #     "This application requires Python >=3.10, <3.12 "
-    #     "(PandasAI 3.0.0 does not support Python 3.12+)."
-    # )
+    import warnings
+    warnings.warn(
+        f"Unsupported Python {sys.version}. "
+        "This application is tested on Python >=3.10, <3.12 "
+        "(PandasAI 3.0.0 does not support Python 3.12+). "
+        "Proceeding anyway — workers may fail.",
+        RuntimeWarning,
+        stacklevel=1,
+    )
 
 import logging
 from contextlib import asynccontextmanager

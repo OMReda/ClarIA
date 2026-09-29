@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import shutil
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -76,6 +77,9 @@ class FileDataResponse(BaseModel):
 
 def _ve(exc: FileValidationError) -> HTTPException:
     """Convert a FileValidationError into a user_error HTTPException."""
+    # Pass details dict for the structured payload AND unpack as fmt_kwargs
+    # for template interpolation — but only keys NOT in the signature to
+    # avoid TypeError from duplicate keyword arguments.
     return user_error(exc.code, details=exc.details, **exc.details)
 
 
@@ -366,8 +370,6 @@ async def delete_file(
     if file_record.owner_id != user.sub:
         raise user_error("FORBIDDEN", http_status=403)
 
-    import shutil
-    from pathlib import Path
     storage_dir = Path(settings.storage_path) / str(fid)
     if storage_dir.exists() and storage_dir.is_dir():
         shutil.rmtree(storage_dir, ignore_errors=True)
