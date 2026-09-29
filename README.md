@@ -18,7 +18,7 @@ No code. No configuration per query. Just data and language.
 - [How it works](#how-it-works)
 - [Architecture](#architecture)
 - [Tech stack](#tech-stack)
-- [Quick start](#quick-start--docker)
+- [Quick start](#quick-start)
   - [Windows: start.bat](#windows-startbat-recommended)
   - [Manual Docker](#manual-docker)
 - [Keycloak setup](#keycloak-setup)
