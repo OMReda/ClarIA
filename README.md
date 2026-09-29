@@ -265,19 +265,14 @@ All settings live in `.env`. A documented template is in `.env.example`.
 
 **Database**
 
-| Variable | Notes |
-|---|---|
-| `DATABASE_URL` | Full async PostgreSQL connection string (API service) |
-| `DATABASE_URL_SYNC` | Full sync PostgreSQL connection string (Celery worker) |
-| `REDIS_URL` | Redis connection string · default `redis://redis:6379/0` |
-| `STORAGE_PATH` | Where uploaded files are stored · default `/app/storage` |
-| `POSTGRES_PASSWORD` | Password injected into docker-compose services · default `changeme` — **change before first start** |
+| Variable | Default | Notes |
+|---|---|---|
+| `DATABASE_URL` | (see `.env.example`) | Async PostgreSQL URL read by the API |
+| `DATABASE_URL_SYNC` | (see `.env.example`) | Sync PostgreSQL URL read by the Celery worker |
+| `REDIS_URL` | `redis://redis:6379/0` | Redis connection string |
+| `STORAGE_PATH` | `/app/storage` | Where uploaded files are stored on disk |
 
-**Keycloak bootstrap (docker-compose only)**
-
-| Variable | Notes |
-|---|---|
-| `KC_ADMIN_PASSWORD` | Keycloak bootstrap admin password · default `changeme` — **change before first start** |
+> **Docker Compose only:** `POSTGRES_PASSWORD` and `KC_ADMIN_PASSWORD` are not read by the Python app — they are interpolated by docker-compose to construct service credentials. Set them in your `.env` before running `docker compose up`. The Python app reads `DATABASE_URL` directly.
 
 **LLM**
 
