@@ -173,7 +173,7 @@ Ollama          any model — runs on same host by default
 | nginx | nginx:alpine | Reverse proxy |
 | postgres | postgres:16-alpine | Primary database |
 | redis | redis:7-alpine | Broker + pub/sub + rate limiting |
-| keycloak | keycloak/keycloak:26.0.0 | Identity provider |
+| keycloak | quay.io/keycloak/keycloak:26.0.0 | Identity provider |
 | ollama | ollama/ollama:latest | Local LLM server |
 
 ---
