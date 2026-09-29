@@ -81,7 +81,11 @@ async def submit_prompt(
     if str(file_record.owner_id) != str(user.sub):
         raise user_error("FORBIDDEN", http_status=403)
     if file_record.status != "validated":
-        raise user_error("FILE_NOT_READY", status=file_record.status)
+        raise user_error(
+            "FILE_NOT_READY",
+            details={"status": file_record.status},
+            status=file_record.status,
+        )
 
     if not body.text.strip():
         raise user_error("EMPTY_PROMPT")
@@ -89,8 +93,8 @@ async def submit_prompt(
     # ── Rate limiting ────────────────────────────────────────────────────
     allowed, count = check_and_increment(user.sub)
     if not allowed:
-        from backend.core.config import get_settings
-        limit = get_settings().rate_limit_prompts_per_hour
+        from backend.core.config import get_settings as _gs
+        limit = _gs().rate_limit_prompts_per_hour
         raise user_error(
             "RATE_LIMIT_EXCEEDED",
             http_status=429,
@@ -202,6 +206,7 @@ async def clarify_prompt(
     if prompt.status != "awaiting_clarification":
         raise user_error(
             "PROMPT_NOT_AWAITING_CLARIFICATION",
+            details={"status": prompt.status},
             status=prompt.status,
         )
     if not body.answer.strip():
