@@ -110,9 +110,12 @@ Browser
   └─ prod: nginx :80 (HTTP only behind your own TLS terminator)
 
 nginx
-  ├─ /api/*      → FastAPI :8000
-  ├─ /ws/*       → FastAPI :8000   (WebSocket upgrade)
-  └─ /realms/*   → Keycloak :8080  (OIDC token endpoint)
+  ├─ /api/*         → FastAPI :8000
+  ├─ /ws/*          → FastAPI :8000   (WebSocket upgrade)
+  ├─ /realms/*      → Keycloak :8080  (OIDC token endpoint)
+  ├─ /resources/*   → Keycloak :8080  (login UI assets)
+  ├─ /js/*          → Keycloak :8080  (login UI scripts)
+  └─ /admin/*       → 403 BLOCKED     (admin console — internal only)
 
 FastAPI (async, Uvicorn)
   ├─ POST   /api/v1/files                      upload + validate
@@ -255,7 +258,15 @@ http://localhost
 
 ## Keycloak setup
 
-The bundled realm JSON pre-configures the `claria` realm, the `claria-frontend` public client, and the `admin` role. After first start you will need to configure a few things manually via the Keycloak admin console (`http://localhost:8080`):
+The bundled realm JSON pre-configures the `claria` realm, the `claria-frontend` public client, and the `admin` role. After first start you will need to configure a few things manually via the Keycloak admin console.
+
+> [!IMPORTANT]
+> The Keycloak admin console (`/admin/`) is **blocked from the public nginx proxy** — it returns `403`. Access it directly on the Docker network at `http://localhost:8080/admin/` while on the same machine, or via an SSH tunnel:
+> ```bash
+> ssh -L 8080:localhost:8080 your-server
+> # Then open http://localhost:8080/admin/ in your browser
+> ```
+> Log in with username `admin` and the `KC_ADMIN_PASSWORD` you set in `.env`.
 
 **1. Set the admin service account secret**
 - Go to **Clients → claria-admin → Credentials**
