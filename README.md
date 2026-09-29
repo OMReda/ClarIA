@@ -146,7 +146,7 @@ Ollama          any model — runs on same host by default
 | 🐼 | Pandas, NumPy | Data loading and processing |
 | 📂 | openpyxl, xlrd, python-magic, chardet | File parsing and encoding detection |
 | 🔍 | rapidfuzz | Fuzzy column name matching |
-| 🤖 | PandasAI, LiteLLM, pandasai-litellm | LLM data querying |
+| 🤖 | PandasAI, LiteLLM, pandasai-litellm, pandasai-openai | LLM data querying |
 | 🐳 | pandasai-docker | Sandboxed code execution |
 | ✅ | Pydantic v2, pydantic-settings | Validation and config |
 
