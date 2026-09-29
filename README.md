@@ -261,13 +261,14 @@ The full test suite runs against an in-memory SQLite database. No Docker, no Oll
 
 All settings live in `.env`. A documented template is in `.env.example`.
 
-**Core**
+**Database**
 
-| Variable | Default | Notes |
+| Variable | Default in `.env.example` | Notes |
 |---|---|---|
-| `POSTGRES_PASSWORD` | `changeme` | PostgreSQL password |
-| `DATABASE_URL` | (postgres via Docker) | Override for custom DB |
+| `DATABASE_URL` | `postgresql+asyncpg://plateforme:plateforme@postgres:5432/plateforme` | Async URL (API) |
+| `DATABASE_URL_SYNC` | `postgresql+psycopg2://plateforme:plateforme@postgres:5432/plateforme` | Sync URL (Celery worker) |
 | `REDIS_URL` | `redis://redis:6379/0` | Redis connection string |
+| `STORAGE_PATH` | `/app/storage` | Where uploaded files are stored on disk |
 
 **LLM**
 
@@ -275,7 +276,7 @@ All settings live in `.env`. A documented template is in `.env.example`.
 |---|---|---|
 | `LLM_PROVIDER` | `local` | `local` · `openai` · `anthropic` · `google` |
 | `LLM_MODEL` | `ollama/qwen2.5-coder:7b` | Any LiteLLM model string — any Ollama model works |
-| `OLLAMA_BASE_URL` | `http://ollama:11434` | Ollama server address |
+| `OLLAMA_BASE_URL` | `http://127.0.0.1:11434` | Ollama server address (Docker uses `http://ollama:11434`) |
 | `OPENAI_API_KEY` | — | Required when `LLM_PROVIDER=openai` |
 | `ANTHROPIC_API_KEY` | — | Required when `LLM_PROVIDER=anthropic` |
 | `GOOGLE_API_KEY` | — | Required when `LLM_PROVIDER=google` |
@@ -287,15 +288,21 @@ All settings live in `.env`. A documented template is in `.env.example`.
 |---|---|---|
 | `MAX_FILE_SIZE_MB` | `10` | Upload size cap |
 | `MAX_ROWS` | `100000` | Row limit per file |
-| `SESSION_TTL_DAYS` | `7` | Days before files are auto-deleted |
 | `RATE_LIMIT_PROMPTS_PER_HOUR` | `30` | Per-user hourly cap |
+
+**Other**
+
+| Variable | Default | Notes |
+|---|---|---|
+| `CORS_ORIGINS` | `http://localhost,http://localhost:5173` | Comma-separated allowed origins |
+| `CELERY_ALWAYS_EAGER` | `False` | Set to `True` to run tasks synchronously (testing) |
 
 **Fuzzy matching**
 
 | Variable | Default | Notes |
 |---|---|---|
-| `FUZZY_HIGH_THRESHOLD` | `80` | Score ≥ 80 → silent correction |
-| `FUZZY_MID_THRESHOLD` | `50` | Score 50–79 → ask the user |
+| `FUZZY_HIGH_THRESHOLD` | `80` | Score ≥ 80 → silent column correction |
+| `FUZZY_MID_THRESHOLD` | `50` | Score 50–79 → ask the user for clarification |
 
 **Keycloak**
 
@@ -305,8 +312,7 @@ All settings live in `.env`. A documented template is in `.env.example`.
 | `KEYCLOAK_REALM` | `claria` | Realm name |
 | `KEYCLOAK_CLIENT_ID` | `claria-frontend` | OIDC public client |
 | `KEYCLOAK_ADMIN_CLIENT_ID` | `claria-admin` | Service account for user management |
-| `KEYCLOAK_ADMIN_CLIENT_SECRET` | — | Service account secret |
-| `KC_ADMIN_PASSWORD` | `changeme` | Keycloak bootstrap admin password |
+| `KEYCLOAK_ADMIN_CLIENT_SECRET` | `change-me-in-production` | Service account secret |
 
 ---
 
