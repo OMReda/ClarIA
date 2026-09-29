@@ -37,25 +37,5 @@
       }
     ]
   },
-  "users": [
-    {
-      "id": "67ddce07-24ac-4861-9e69-de35d86b4710",
-      "username": "testuser",
-      "email": "test@claria.local",
-      "firstName": "Test",
-      "lastName": "User",
-      "emailVerified": true,
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "password",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "user"
-      ]
-    }
-  ]
+  "users": []
 }
