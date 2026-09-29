@@ -189,7 +189,7 @@ cd plateforme-restitution
 
 # 2. Set environment variables
 cp .env.example .env
-# Edit .env — change the passwords in DATABASE_URL/DATABASE_URL_SYNC and set KEYCLOAK_ADMIN_CLIENT_SECRET
+# Edit .env — set POSTGRES_PASSWORD, KC_ADMIN_PASSWORD, and KEYCLOAK_ADMIN_CLIENT_SECRET
 
 # 3. Start everything
 docker compose -f docker/docker-compose.yml up --build
@@ -265,12 +265,19 @@ All settings live in `.env`. A documented template is in `.env.example`.
 
 **Database**
 
-| Variable | Default in `.env.example` | Notes |
-|---|---|---|
-| `DATABASE_URL` | `postgresql+asyncpg://plateforme:plateforme@postgres:5432/plateforme` | Async URL (API) |
-| `DATABASE_URL_SYNC` | `postgresql+psycopg2://plateforme:plateforme@postgres:5432/plateforme` | Sync URL (Celery worker) |
-| `REDIS_URL` | `redis://redis:6379/0` | Redis connection string |
-| `STORAGE_PATH` | `/app/storage` | Where uploaded files are stored on disk |
+| Variable | Notes |
+|---|---|
+| `DATABASE_URL` | Full async PostgreSQL connection string (API service) |
+| `DATABASE_URL_SYNC` | Full sync PostgreSQL connection string (Celery worker) |
+| `REDIS_URL` | Redis connection string · default `redis://redis:6379/0` |
+| `STORAGE_PATH` | Where uploaded files are stored · default `/app/storage` |
+| `POSTGRES_PASSWORD` | Password injected into docker-compose services · default `changeme` — **change before first start** |
+
+**Keycloak bootstrap (docker-compose only)**
+
+| Variable | Notes |
+|---|---|
+| `KC_ADMIN_PASSWORD` | Keycloak bootstrap admin password · default `changeme` — **change before first start** |
 
 **LLM**
 
