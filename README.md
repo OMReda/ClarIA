@@ -186,7 +186,7 @@ Ollama          any model — runs on same host by default
 
 ---
 
-## Quick start — Docker
+## Quick start
 
 ### Windows: `start.bat` (recommended)
 
