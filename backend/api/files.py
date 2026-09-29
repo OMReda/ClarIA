@@ -77,10 +77,13 @@ class FileDataResponse(BaseModel):
 
 def _ve(exc: FileValidationError) -> HTTPException:
     """Convert a FileValidationError into a user_error HTTPException."""
-    # Pass details dict for the structured payload AND unpack as fmt_kwargs
-    # for template interpolation — but only keys NOT in the signature to
-    # avoid TypeError from duplicate keyword arguments.
-    return user_error(exc.code, details=exc.details, **exc.details)
+    # exc.details carries template format values (e.g. max_size_mb, received_rows).
+    # We pass them as both details= (for the structured payload) and **fmt_kwargs
+    # (for message template interpolation). Filter out any keys that overlap with
+    # user_error's own named parameters to avoid TypeError on duplicate kwargs.
+    _RESERVED = {"code", "http_status", "details"}
+    fmt_kwargs = {k: v for k, v in exc.details.items() if k not in _RESERVED}
+    return user_error(exc.code, details=exc.details, **fmt_kwargs)
 
 
 
