@@ -320,14 +320,14 @@ All settings live in `.env`. A documented template is in `.env.example`.
 
 | Type | Detected by | Example French prompts |
 |---|---|---|
-| **Bar** | `barre`, `par région`, `par catégorie`, `par` | "Ventes par région", "Montant par catégorie" |
-| **Line** | `évolution`, `tendance`, `par mois`, `par date` | "Évolution des ventes par mois" |
-| **Area** | `aire`, `cumulé`, `surface` | "Cumul des revenus sur l'année" |
-| **Pie** | `camembert`, `proportion`, `pourcentage`, `répartition` | "Répartition par type de produit" |
-| **Scatter** | `corrélation`, `nuage`, `vs`, `versus` | "Corrélation entre prix et quantité" |
+| **Bar** | `barre`, `barres`, `par region`, `par categorie`, `groupe` | "Ventes par région", "Montant par catégorie" |
+| **Line** | `évolution`, `tendance`, `courbe`, `par mois`, `par date`, `dans le temps` | "Évolution des ventes par mois" |
+| **Area** | `aire`, `cumulé`, `cumulatif` | "Cumul des revenus sur l'année" |
+| **Pie** | `camembert`, `proportion`, `pourcentage`, `répartition`, `donut` | "Répartition par type de produit" |
+| **Scatter** | `corrélation`, `nuage`, `dispersion`, `relation entre` | "Corrélation entre prix et quantité" |
 | **Histogram** | `distribution`, `histogramme`, `fréquence` | "Distribution des montants de commande" |
-| **Radar** | `radar`, `toile`, `spider` | "Comparaison des indicateurs en radar" |
-| **Heatmap** | `heatmap`, `chaleur`, `matrice` | "Matrice de corrélation des colonnes" |
+| **Radar** | `radar`, `toile d'araignée`, `araignée`, `spider`, `radial` | "Comparaison des indicateurs en radar" |
+| **Heatmap** | `heatmap`, `carte de chaleur`, `matrice de corrélation`, `intensité` | "Matrice de corrélation des colonnes" |
 
 For Ollama / local models, detection is keyword-based (fast, no extra LLM call).  
 For cloud providers, the backend makes an LLM classification call for better accuracy on phrasing variations.
