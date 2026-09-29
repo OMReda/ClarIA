@@ -280,6 +280,8 @@ The bundled realm JSON pre-configures the `claria` realm, the `claria-frontend` 
 > [!NOTE]
 > The `claria-realm.json` file is the source of truth for the realm configuration. If you need to reset the realm to defaults, delete the Keycloak volume and restart — it will be re-imported automatically.
 
+---
+
 ## Local development
 
 ### Backend
