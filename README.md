@@ -3,7 +3,7 @@
 Upload a spreadsheet. Ask a question in plain French. Get an interactive chart.
 No code. No configuration per query. Just data and language.
 
-![Python](https://img.shields.io/badge/Python-3.11-3776ab?style=flat-square&logo=python&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.10%20%7C%203.11-3776ab?style=flat-square&logo=python&logoColor=white)
 ![React](https://img.shields.io/badge/React-18-61dafb?style=flat-square&logo=react&logoColor=black)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.11x-009688?style=flat-square&logo=fastapi&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?style=flat-square&logo=postgresql&logoColor=white)
@@ -189,7 +189,7 @@ cd plateforme-restitution
 
 # 2. Set environment variables
 cp .env.example .env
-# Edit .env — at minimum change POSTGRES_PASSWORD and KC_ADMIN_PASSWORD
+# Edit .env — change the passwords in DATABASE_URL/DATABASE_URL_SYNC and set KEYCLOAK_ADMIN_CLIENT_SECRET
 
 # 3. Start everything
 docker compose -f docker/docker-compose.yml up --build
