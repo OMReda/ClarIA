@@ -115,7 +115,7 @@ Ollama :11434  ← local LLM (qwen2.5-coder:7b default)
 | Database | postgres:16-alpine |
 | Cache / broker | redis:7-alpine |
 | Auth server | quay.io/keycloak/keycloak:26.0.0 |
-| Local LLM | ollama/ollama:latest |
+| Local LLM | ollama/ollama:latest \u2014 any model from [ollama.com/library](https://ollama.com/library) |
 
 ---
 
@@ -139,7 +139,9 @@ docker compose -f docker/docker-compose.yml up --build
 http://localhost
 ```
 
-> **First start:** Ollama pulls `qwen2.5-coder:7b` (~4.7 GB). This takes several minutes depending on your connection. The worker will not accept prompts until the Ollama healthcheck passes (`start_period: 120s`).
+> **First start:** Ollama will pull whichever model is set in `LLM_MODEL`. The default in `.env.example` is `qwen2.5-coder:7b` (~4.7 GB) — this is just a pre-filled starting point, **not a requirement**. You can use any model available on [ollama.com/library](https://ollama.com/library): pull it with `ollama pull <model>` and update `LLM_MODEL` accordingly. The worker will not accept prompts until the Ollama healthcheck passes (`start_period: 120s`).
+
+> **On model choice:** `qwen2.5-coder:7b` is a personal preference that worked well during development of this project. Results on your hardware and data will vary. Larger models (14B+) tend to produce more reliable aggregations; smaller ones are faster but more error-prone. The app works with any Ollama-compatible model — experiment and find what suits your setup.
 
 ### Default credentials
 
@@ -209,7 +211,7 @@ Copy `.env.example` to `.env` and adjust as needed.
 | `POSTGRES_PASSWORD` | `changeme` | PostgreSQL password (Docker only) |
 | `KC_ADMIN_PASSWORD` | `changeme` | Keycloak bootstrap admin password |
 | `LLM_PROVIDER` | `local` | `local` \| `openai` \| `anthropic` \| `google` |
-| `LLM_MODEL` | `ollama/qwen2.5-coder:7b` | LiteLLM model string |
+| `LLM_MODEL` | `ollama/qwen2.5-coder:7b` | LiteLLM model string — any Ollama model works here |
 | `OLLAMA_BASE_URL` | `http://ollama:11434` | Ollama API base URL |
 | `OPENAI_API_KEY` | — | Required when `LLM_PROVIDER=openai` |
 | `ANTHROPIC_API_KEY` | — | Required when `LLM_PROVIDER=anthropic` |
@@ -263,11 +265,28 @@ Chart type detection uses keyword matching for local models and an LLM classific
 
 ---
 
+## Future perspectives
+
+This is an early-stage project. Planned directions include:
+
+- **Conversation history** — multi-turn prompts that reference previous charts ("now break that down by region")
+- **Scheduled reports** — generate and email a dashboard snapshot on a cron schedule
+- **Multi-dataset joins** — prompt across two uploaded files simultaneously
+- **Custom chart templates** — save and reuse ECharts configurations as named templates
+- **Role-based dataset access** — share specific datasets between users without giving full admin access
+- **Improved local model support** — better prompt engineering and structured output parsing to reduce failures on smaller models
+- **i18n** — multi-language UI (the backend is language-agnostic; only the frontend messages need translation)
+- **Audit log** — per-user prompt and export history for compliance use cases
+
+None of these are guaranteed or on a fixed timeline — this list reflects directions being considered.
+
+---
+
 ## Known limitations & feedback
 
 This project is functional and tested, but it is still in active development. Here are the honest rough edges:
 
-- **Local LLM quality varies.** `qwen2.5-coder:7b` handles most common French data questions well but can produce incorrect aggregations or fail to format results on complex multi-step queries. Larger models (14B+) or cloud providers (Gemini, GPT-4o) give significantly more reliable results.
+- **Local LLM quality varies.** Ollama worked well during development of this project, but results depend heavily on the model you choose and your data shape. `qwen2.5-coder:7b` is simply what was used while building the app — **you are not tied to it**. If you find it struggling with your data, try a larger model (14B+) or switch to a cloud provider (Gemini Flash, GPT-4o-mini) from the settings panel. Cloud providers consistently produce better structured outputs.
 
 - **PandasAI v3 edge cases.** PandasAI 3.x is relatively new. Some data shapes (deeply nested columns, mixed-type columns, non-standard date formats) may produce unexpected results or silent failures.
 
