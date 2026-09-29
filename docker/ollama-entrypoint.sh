@@ -6,7 +6,7 @@
 
 set -e
 
-MODEL="${OLLAMA_MODEL:-llama3}"
+MODEL="${OLLAMA_MODEL:?ERROR: OLLAMA_MODEL is not set. Set it in docker-compose.yml or your .env file.}"
 
 echo "[ollama-entrypoint] Starting Ollama server..."
 ollama serve &
