@@ -16,6 +16,7 @@ ClarIA is a self-hosted data visualisation platform built for non-technical user
 - [Configuration](#configuration)
 - [Supported chart types](#supported-chart-types)
 - [Privacy & security](#privacy--security)
+- [Future perspectives](#future-perspectives)
 - [Known limitations & feedback](#known-limitations--feedback)
 - [License](#license)
 
@@ -70,8 +71,9 @@ Celery worker (sync)
   └─ publish result to Redis → WebSocket → browser
 
 PostgreSQL 16  ← SQLAlchemy (async API + sync worker)
+                  SQLite used automatically for tests (in-memory, no Docker needed)
 Redis 7        ← Celery broker + WebSocket pub/sub + rate-limit counters
-Ollama :11434  ← local LLM (qwen2.5-coder:7b default)
+Ollama :11434  ← local LLM (any model from ollama.com/library)
 ```
 
 ---
@@ -82,11 +84,11 @@ Ollama :11434  ← local LLM (qwen2.5-coder:7b default)
 | Concern | Library |
 |---|---|
 | API framework | FastAPI, Uvicorn |
-| Auth | python-jose / PyJWT, Keycloak OIDC |
+| Auth | PyJWT, Keycloak OIDC |
 | ORM | SQLAlchemy (async + sync) |
 | Migrations | Alembic |
 | Task queue | Celery, Redis |
-| Data | Pandas, NumPy, DuckDB |
+| Data | Pandas, NumPy |
 | File parsing | openpyxl, xlrd, python-magic, chardet |
 | String matching | rapidfuzz |
 | LLM / AI | PandasAI, LiteLLM, pandasai-litellm, pandasai-openai |
@@ -112,7 +114,7 @@ Ollama :11434  ← local LLM (qwen2.5-coder:7b default)
 | Service | Image |
 |---|---|
 | Reverse proxy | nginx (alpine) |
-| Database | postgres:16-alpine |
+| Database | postgres:16-alpine (production) / SQLite in-memory (tests) |
 | Cache / broker | redis:7-alpine |
 | Auth server | quay.io/keycloak/keycloak:26.0.0 |
 | Local LLM | ollama/ollama:latest \u2014 any model from [ollama.com/library](https://ollama.com/library) |
